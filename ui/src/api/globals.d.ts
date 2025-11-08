@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * Sealdice New API - version 1.0.0
+ * Go Template API - version 1.0.0
  *
  *
  *
@@ -15,7 +15,7 @@
  * **Do not edit the file manually.**
  */
 import type { Alova, AlovaMethodCreateConfig, AlovaGenerics, Method } from 'alova';
-import type { $$userConfigMap, alovaInstance } from '.';
+import type { $$userConfigMap, alovaInstance } from './index';
 import type apiDefinitions from './apiDefinitions';
 
 type CollapsedAlova = typeof alovaInstance;
@@ -88,8 +88,2120 @@ type Alova2Method<
       >
     : never;
 
+export interface CreateProjectInputBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 项目描述
+   */
+  description: string;
+  /**
+   * 项目名称
+   */
+  name: string;
+  /**
+   * 本地项目目录路径（可非 Git 仓库）
+   */
+  path: string;
+  /**
+   * Worktree 基础路径（可选，默认为项目目录下的 worktrees 子目录）
+   */
+  worktreeBasePath?: string;
+}
+export interface OpenPathInputBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 目标路径
+   */
+  path: string;
+}
+export interface MessageResponseBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 提示信息
+   */
+  message: string;
+}
+export interface Project {
+  createdAt: string;
+  defaultBranch: string;
+  deletedAt: string | null;
+  description: string | null;
+  id: string;
+  lastSyncAt: string | null;
+  name: string;
+  path: string;
+  remoteUrl: string | null;
+  updatedAt: string;
+  worktreeBasePath: string | null;
+}
+export interface ItemsResponseProjectBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 响应列表
+   */
+  items: Project[] | null;
+}
+export interface CreateTaskBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 任务描述
+   */
+  description: string;
+  /**
+   * 截止日期
+   */
+  dueDate: string | null;
+  /**
+   * 优先级
+   */
+  priority: number;
+  /**
+   * 任务状态
+   */
+  status: 'todo' | 'in_progress' | 'done' | 'archived';
+  /**
+   * 标签
+   */
+  tags: string[] | null;
+  /**
+   * 任务标题
+   */
+  title: string;
+  /**
+   * 关联的 Worktree
+   */
+  worktreeId: string | null;
+}
+export interface Worktree_create_request {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 基础分支
+   */
+  baseBranch: string;
+  /**
+   * 分支名称
+   */
+  branchName: string;
+  /**
+   * 是否创建新分支
+   */
+  createBranch: boolean;
+}
+export interface UpdateTaskBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 任务描述
+   */
+  description: string | null;
+  /**
+   * 截止日期
+   */
+  dueDate: string | null;
+  /**
+   * 优先级
+   */
+  priority: number | null;
+  /**
+   * 标签
+   */
+  tags: string[] | null;
+  /**
+   * 任务标题
+   */
+  title: string | null;
+}
+export interface BindWorktreeBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * Worktree ID（null 表示解绑）
+   */
+  worktreeId: string | null;
+}
+export interface CreateCommentBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 评论内容
+   */
+  content: string;
+}
+export interface MoveTaskBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 排序索引
+   */
+  orderIndex: number | null;
+  /**
+   * 新状态
+   */
+  status: string;
+  /**
+   * 关联 Worktree
+   */
+  worktreeId: string | null;
+}
+export interface ItemResponseProjectBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 响应对象
+   */
+  item: Project;
+}
+export interface RefreshAllResult {
+  /**
+   * 刷新失败数量
+   */
+  failed: number;
+  /**
+   * 刷新成功数量
+   */
+  updated: number;
+}
+export interface ItemResponseRefreshAllResultBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 响应对象
+   */
+  item: RefreshAllResult;
+}
+export interface Worktree {
+  branchName: string;
+  createdAt: string;
+  deletedAt: string | null;
+  headCommit: string | null;
+  id: string;
+  isBare: boolean;
+  isMain: boolean;
+  path: string;
+  projectId: string;
+  statusAhead: number;
+  statusBehind: number;
+  statusConflicts: number;
+  statusModified: number;
+  statusStaged: number;
+  statusUntracked: number;
+  statusUpdatedAt: string | null;
+  updatedAt: string;
+}
+export interface ItemsResponseWorktreeBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 响应列表
+   */
+  items: Worktree[] | null;
+}
+export interface DeletedAt {
+  Time: string;
+  Valid: boolean;
+}
+export interface ProjectTable {
+  createdAt: string;
+  defaultBranch: string;
+  deletedAt: DeletedAt;
+  description: string;
+  id: string;
+  lastSyncAt: string | null;
+  name: string;
+  path: string;
+  remoteUrl: string;
+  updatedAt: string;
+  worktreeBasePath: string;
+}
+export interface WorktreeTable {
+  branchName: string;
+  createdAt: string;
+  deletedAt: DeletedAt;
+  headCommit: string;
+  id: string;
+  isBare: boolean;
+  isMain: boolean;
+  path: string;
+  project?: ProjectTable;
+  projectId: string;
+  statusAhead: number;
+  statusBehind: number;
+  statusConflicts: number;
+  statusModified: number;
+  statusStaged: number;
+  statusUntracked: number;
+  statusUpdatedAt: string | null;
+  updatedAt: string;
+}
+export interface TaskTable {
+  completedAt: string | null;
+  createdAt: string;
+  deletedAt: DeletedAt;
+  description: string;
+  dueDate: string | null;
+  id: string;
+  orderIndex: number;
+  priority: number;
+  project?: ProjectTable;
+  projectId: string;
+  status: string;
+  tags: string[] | null;
+  title: string;
+  updatedAt: string;
+  worktree?: WorktreeTable;
+  worktreeId: string | null;
+}
+export interface ItemResponseTaskTableBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 响应对象
+   */
+  item: TaskTable;
+}
+export interface TaskCommentTable {
+  content: string;
+  createdAt: string;
+  deletedAt: DeletedAt;
+  id: string;
+  task?: TaskTable;
+  taskId: string;
+  updatedAt: string;
+}
+export interface ItemsResponseTaskCommentTableBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 响应列表
+   */
+  items: TaskCommentTable[] | null;
+}
+export interface ItemResponseWorktreeBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 响应对象
+   */
+  item: Worktree;
+}
+export interface PaginatedResponseTaskTableBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 本次返回数量
+   */
+  itemCount: number;
+  /**
+   * 响应列表
+   */
+  items: TaskTable[] | null;
+  /**
+   * 当前页码
+   */
+  page: number;
+  /**
+   * 每页数量
+   */
+  pageSize: number;
+  /**
+   * 记录总数
+   */
+  total: number;
+}
+export interface ItemResponseTaskCommentTableBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 响应对象
+   */
+  item: TaskCommentTable;
+}
 declare global {
-  interface Apis {}
+  interface Apis {
+    health: {
+      /**
+       * ---
+       *
+       * [GET] 健康探测
+       *
+       * **path:** /api/v1/health
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 提示信息
+       *   message: string
+       * }
+       * ```
+       */
+      check<Config extends Alova2MethodConfig<MessageResponseBody>>(
+        config?: Config
+      ): Alova2Method<MessageResponseBody, 'health.check', Config>;
+    };
+    project: {
+      /**
+       * ---
+       *
+       * [GET] 项目列表
+       *
+       * **path:** /api/v1/projects
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应列表
+       *   // [params1] start
+       *   // [items] start
+       *   // [items] end
+       *   // [params1] end
+       *   items: Array<{
+       *     createdAt: string
+       *     defaultBranch: string
+       *     deletedAt: string | null
+       *     description: string | null
+       *     id: string
+       *     lastSyncAt: string | null
+       *     name: string
+       *     path: string
+       *     remoteUrl: string | null
+       *     updatedAt: string
+       *     worktreeBasePath: string | null
+       *   }> | null
+       * }
+       * ```
+       */
+      list<Config extends Alova2MethodConfig<ItemsResponseProjectBody>>(
+        config?: Config
+      ): Alova2Method<ItemsResponseProjectBody, 'project.list', Config>;
+      /**
+       * ---
+       *
+       * [POST] 创建项目
+       *
+       * **path:** /api/v1/projects
+       *
+       * ---
+       *
+       * **RequestBody**
+       * ```ts
+       * type RequestBody = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 项目描述
+       *   description: string
+       *   // 项目名称
+       *   name: string
+       *   // 本地项目目录路径（可非 Git 仓库）
+       *   path: string
+       *   // Worktree 基础路径（可选，默认为项目目录下的 worktrees 子目录）
+       *   worktreeBasePath?: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应对象
+       *   item: {
+       *     createdAt: string
+       *     defaultBranch: string
+       *     deletedAt: string | null
+       *     description: string | null
+       *     id: string
+       *     lastSyncAt: string | null
+       *     name: string
+       *     path: string
+       *     remoteUrl: string | null
+       *     updatedAt: string
+       *     worktreeBasePath: string | null
+       *   }
+       * }
+       * ```
+       */
+      create<
+        Config extends Alova2MethodConfig<ItemResponseProjectBody> & {
+          data: CreateProjectInputBody;
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemResponseProjectBody, 'project.create', Config>;
+      /**
+       * ---
+       *
+       * [DELETE] 删除项目
+       *
+       * **path:** /api/v1/projects/{id}
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 提示信息
+       *   message: string
+       * }
+       * ```
+       */
+      deleteById<
+        Config extends Alova2MethodConfig<MessageResponseBody> & {
+          pathParams: {
+            id: string;
+          };
+        }
+      >(
+        config: Config
+      ): Alova2Method<MessageResponseBody, 'project.deleteById', Config>;
+      /**
+       * ---
+       *
+       * [GET] 获取项目详情
+       *
+       * **path:** /api/v1/projects/{id}
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应对象
+       *   item: {
+       *     createdAt: string
+       *     defaultBranch: string
+       *     deletedAt: string | null
+       *     description: string | null
+       *     id: string
+       *     lastSyncAt: string | null
+       *     name: string
+       *     path: string
+       *     remoteUrl: string | null
+       *     updatedAt: string
+       *     worktreeBasePath: string | null
+       *   }
+       * }
+       * ```
+       */
+      getById<
+        Config extends Alova2MethodConfig<ItemResponseProjectBody> & {
+          pathParams: {
+            id: string;
+          };
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemResponseProjectBody, 'project.getById', Config>;
+    };
+    worktree: {
+      /**
+       * ---
+       *
+       * [POST] 刷新所有 Worktree 状态
+       *
+       * **path:** /api/v1/projects/{projectId}/refresh-all-worktrees
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   projectId: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应对象
+       *   item: {
+       *     // 刷新失败数量
+       *     failed: number
+       *     // 刷新成功数量
+       *     updated: number
+       *   }
+       * }
+       * ```
+       */
+      refreshAllByProject<
+        Config extends Alova2MethodConfig<ItemResponseRefreshAllResultBody> & {
+          pathParams: {
+            projectId: string;
+          };
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemResponseRefreshAllResultBody, 'worktree.refreshAllByProject', Config>;
+      /**
+       * ---
+       *
+       * [POST] 同步 Worktree
+       *
+       * **path:** /api/v1/projects/{projectId}/sync-worktrees
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   projectId: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 提示信息
+       *   message: string
+       * }
+       * ```
+       */
+      syncByProject<
+        Config extends Alova2MethodConfig<MessageResponseBody> & {
+          pathParams: {
+            projectId: string;
+          };
+        }
+      >(
+        config: Config
+      ): Alova2Method<MessageResponseBody, 'worktree.syncByProject', Config>;
+      /**
+       * ---
+       *
+       * [GET] 获取 Worktree 列表
+       *
+       * **path:** /api/v1/projects/{projectId}/worktrees
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   projectId: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应列表
+       *   // [params1] start
+       *   // [items] start
+       *   // [items] end
+       *   // [params1] end
+       *   items: Array<{
+       *     branchName: string
+       *     createdAt: string
+       *     deletedAt: string | null
+       *     headCommit: string | null
+       *     id: string
+       *     isBare: boolean
+       *     isMain: boolean
+       *     path: string
+       *     projectId: string
+       *     statusAhead: number
+       *     statusBehind: number
+       *     statusConflicts: number
+       *     statusModified: number
+       *     statusStaged: number
+       *     statusUntracked: number
+       *     statusUpdatedAt: string | null
+       *     updatedAt: string
+       *   }> | null
+       * }
+       * ```
+       */
+      listByProject<
+        Config extends Alova2MethodConfig<ItemsResponseWorktreeBody> & {
+          pathParams: {
+            projectId: string;
+          };
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemsResponseWorktreeBody, 'worktree.listByProject', Config>;
+      /**
+       * ---
+       *
+       * [POST] 创建 Worktree
+       *
+       * **path:** /api/v1/projects/{projectId}/worktrees
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   projectId: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **RequestBody**
+       * ```ts
+       * type RequestBody = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 基础分支
+       *   baseBranch: string
+       *   // 分支名称
+       *   branchName: string
+       *   // 是否创建新分支
+       *   createBranch: boolean
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应对象
+       *   item: {
+       *     branchName: string
+       *     createdAt: string
+       *     deletedAt: string | null
+       *     headCommit: string | null
+       *     id: string
+       *     isBare: boolean
+       *     isMain: boolean
+       *     path: string
+       *     projectId: string
+       *     statusAhead: number
+       *     statusBehind: number
+       *     statusConflicts: number
+       *     statusModified: number
+       *     statusStaged: number
+       *     statusUntracked: number
+       *     statusUpdatedAt: string | null
+       *     updatedAt: string
+       *   }
+       * }
+       * ```
+       */
+      create<
+        Config extends Alova2MethodConfig<ItemResponseWorktreeBody> & {
+          pathParams: {
+            projectId: string;
+          };
+          data: Worktree_create_request;
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemResponseWorktreeBody, 'worktree.create', Config>;
+      /**
+       * ---
+       *
+       * [DELETE] 删除 Worktree
+       *
+       * **path:** /api/v1/worktrees/{id}
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Query Parameters**
+       * ```ts
+       * type QueryParameters = {
+       *   force?: boolean
+       *   deleteBranch?: boolean
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 提示信息
+       *   message: string
+       * }
+       * ```
+       */
+      delete<
+        Config extends Alova2MethodConfig<MessageResponseBody> & {
+          pathParams: {
+            id: string;
+          };
+          params: {
+            force?: boolean;
+            deleteBranch?: boolean;
+          };
+        }
+      >(
+        config: Config
+      ): Alova2Method<MessageResponseBody, 'worktree.delete', Config>;
+      /**
+       * ---
+       *
+       * [POST] 刷新 Worktree 状态
+       *
+       * **path:** /api/v1/worktrees/{id}/refresh-status
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应对象
+       *   item: {
+       *     branchName: string
+       *     createdAt: string
+       *     deletedAt: string | null
+       *     headCommit: string | null
+       *     id: string
+       *     isBare: boolean
+       *     isMain: boolean
+       *     path: string
+       *     projectId: string
+       *     statusAhead: number
+       *     statusBehind: number
+       *     statusConflicts: number
+       *     statusModified: number
+       *     statusStaged: number
+       *     statusUntracked: number
+       *     statusUpdatedAt: string | null
+       *     updatedAt: string
+       *   }
+       * }
+       * ```
+       */
+      refreshStatus<
+        Config extends Alova2MethodConfig<ItemResponseWorktreeBody> & {
+          pathParams: {
+            id: string;
+          };
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemResponseWorktreeBody, 'worktree.refreshStatus', Config>;
+    };
+    task: {
+      /**
+       * ---
+       *
+       * [GET] 任务列表
+       *
+       * **path:** /api/v1/projects/{projectId}/tasks
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   projectId: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Query Parameters**
+       * ```ts
+       * type QueryParameters = {
+       *   status?: string
+       *   worktreeId?: string
+       *   priority?: string
+       *   keyword?: string
+       *   page?: number
+       *   pageSize?: number
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 本次返回数量
+       *   itemCount: number
+       *   // 响应列表
+       *   // [params1] start
+       *   // [items] start
+       *   // [items] end
+       *   // [params1] end
+       *   items: Array<{
+       *     completedAt: string | null
+       *     createdAt: string
+       *     deletedAt: {
+       *       Time: string
+       *       Valid: boolean
+       *     }
+       *     description: string
+       *     dueDate: string | null
+       *     id: string
+       *     orderIndex: number
+       *     priority: number
+       *     project?: {
+       *       createdAt: string
+       *       defaultBranch: string
+       *       deletedAt: {
+       *         Time: string
+       *         Valid: boolean
+       *       }
+       *       description: string
+       *       id: string
+       *       lastSyncAt: string | null
+       *       name: string
+       *       path: string
+       *       remoteUrl: string
+       *       updatedAt: string
+       *       worktreeBasePath: string
+       *     }
+       *     projectId: string
+       *     status: string
+       *     // [params1] start
+       *     // [items] start
+       *     // [items] end
+       *     // [params1] end
+       *     tags: string[] | null
+       *     title: string
+       *     updatedAt: string
+       *     worktree?: {
+       *       branchName: string
+       *       createdAt: string
+       *       deletedAt: {
+       *         Time: string
+       *         Valid: boolean
+       *       }
+       *       headCommit: string
+       *       id: string
+       *       isBare: boolean
+       *       isMain: boolean
+       *       path: string
+       *       project?: {
+       *         createdAt: string
+       *         defaultBranch: string
+       *         deletedAt: {
+       *           Time: string
+       *           Valid: boolean
+       *         }
+       *         description: string
+       *         id: string
+       *         lastSyncAt: string | null
+       *         name: string
+       *         path: string
+       *         remoteUrl: string
+       *         updatedAt: string
+       *         worktreeBasePath: string
+       *       }
+       *       projectId: string
+       *       statusAhead: number
+       *       statusBehind: number
+       *       statusConflicts: number
+       *       statusModified: number
+       *       statusStaged: number
+       *       statusUntracked: number
+       *       statusUpdatedAt: string | null
+       *       updatedAt: string
+       *     }
+       *     worktreeId: string | null
+       *   }> | null
+       *   // 当前页码
+       *   page: number
+       *   // 每页数量
+       *   pageSize: number
+       *   // 记录总数
+       *   total: number
+       * }
+       * ```
+       */
+      list<
+        Config extends Alova2MethodConfig<PaginatedResponseTaskTableBody> & {
+          pathParams: {
+            projectId: string;
+          };
+          params: {
+            status?: string;
+            worktreeId?: string;
+            priority?: string;
+            keyword?: string;
+            page?: number;
+            pageSize?: number;
+          };
+        }
+      >(
+        config: Config
+      ): Alova2Method<PaginatedResponseTaskTableBody, 'task.list', Config>;
+      /**
+       * ---
+       *
+       * [POST] 创建任务
+       *
+       * **path:** /api/v1/projects/{projectId}/tasks
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   projectId: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **RequestBody**
+       * ```ts
+       * type RequestBody = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 任务描述
+       *   description: string
+       *   // 截止日期
+       *   dueDate: string | null
+       *   // 优先级
+       *   priority: number
+       *   // 任务状态
+       *   status: 'todo' | 'in_progress' | 'done' | 'archived'
+       *   // 标签
+       *   // [params1] start
+       *   // [items] start
+       *   // [items] end
+       *   // [params1] end
+       *   tags: string[] | null
+       *   // 任务标题
+       *   title: string
+       *   // 关联的 Worktree
+       *   worktreeId: string | null
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应对象
+       *   item: {
+       *     completedAt: string | null
+       *     createdAt: string
+       *     deletedAt: {
+       *       Time: string
+       *       Valid: boolean
+       *     }
+       *     description: string
+       *     dueDate: string | null
+       *     id: string
+       *     orderIndex: number
+       *     priority: number
+       *     project?: {
+       *       createdAt: string
+       *       defaultBranch: string
+       *       deletedAt: {
+       *         Time: string
+       *         Valid: boolean
+       *       }
+       *       description: string
+       *       id: string
+       *       lastSyncAt: string | null
+       *       name: string
+       *       path: string
+       *       remoteUrl: string
+       *       updatedAt: string
+       *       worktreeBasePath: string
+       *     }
+       *     projectId: string
+       *     status: string
+       *     // [params1] start
+       *     // [items] start
+       *     // [items] end
+       *     // [params1] end
+       *     tags: string[] | null
+       *     title: string
+       *     updatedAt: string
+       *     worktree?: {
+       *       branchName: string
+       *       createdAt: string
+       *       deletedAt: {
+       *         Time: string
+       *         Valid: boolean
+       *       }
+       *       headCommit: string
+       *       id: string
+       *       isBare: boolean
+       *       isMain: boolean
+       *       path: string
+       *       project?: {
+       *         createdAt: string
+       *         defaultBranch: string
+       *         deletedAt: {
+       *           Time: string
+       *           Valid: boolean
+       *         }
+       *         description: string
+       *         id: string
+       *         lastSyncAt: string | null
+       *         name: string
+       *         path: string
+       *         remoteUrl: string
+       *         updatedAt: string
+       *         worktreeBasePath: string
+       *       }
+       *       projectId: string
+       *       statusAhead: number
+       *       statusBehind: number
+       *       statusConflicts: number
+       *       statusModified: number
+       *       statusStaged: number
+       *       statusUntracked: number
+       *       statusUpdatedAt: string | null
+       *       updatedAt: string
+       *     }
+       *     worktreeId: string | null
+       *   }
+       * }
+       * ```
+       */
+      create<
+        Config extends Alova2MethodConfig<ItemResponseTaskTableBody> & {
+          pathParams: {
+            projectId: string;
+          };
+          data: CreateTaskBody;
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemResponseTaskTableBody, 'task.create', Config>;
+      /**
+       * ---
+       *
+       * [DELETE] 删除任务
+       *
+       * **path:** /api/v1/tasks/{id}
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 提示信息
+       *   message: string
+       * }
+       * ```
+       */
+      delete<
+        Config extends Alova2MethodConfig<MessageResponseBody> & {
+          pathParams: {
+            id: string;
+          };
+        }
+      >(
+        config: Config
+      ): Alova2Method<MessageResponseBody, 'task.delete', Config>;
+      /**
+       * ---
+       *
+       * [GET] 任务详情
+       *
+       * **path:** /api/v1/tasks/{id}
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应对象
+       *   item: {
+       *     completedAt: string | null
+       *     createdAt: string
+       *     deletedAt: {
+       *       Time: string
+       *       Valid: boolean
+       *     }
+       *     description: string
+       *     dueDate: string | null
+       *     id: string
+       *     orderIndex: number
+       *     priority: number
+       *     project?: {
+       *       createdAt: string
+       *       defaultBranch: string
+       *       deletedAt: {
+       *         Time: string
+       *         Valid: boolean
+       *       }
+       *       description: string
+       *       id: string
+       *       lastSyncAt: string | null
+       *       name: string
+       *       path: string
+       *       remoteUrl: string
+       *       updatedAt: string
+       *       worktreeBasePath: string
+       *     }
+       *     projectId: string
+       *     status: string
+       *     // [params1] start
+       *     // [items] start
+       *     // [items] end
+       *     // [params1] end
+       *     tags: string[] | null
+       *     title: string
+       *     updatedAt: string
+       *     worktree?: {
+       *       branchName: string
+       *       createdAt: string
+       *       deletedAt: {
+       *         Time: string
+       *         Valid: boolean
+       *       }
+       *       headCommit: string
+       *       id: string
+       *       isBare: boolean
+       *       isMain: boolean
+       *       path: string
+       *       project?: {
+       *         createdAt: string
+       *         defaultBranch: string
+       *         deletedAt: {
+       *           Time: string
+       *           Valid: boolean
+       *         }
+       *         description: string
+       *         id: string
+       *         lastSyncAt: string | null
+       *         name: string
+       *         path: string
+       *         remoteUrl: string
+       *         updatedAt: string
+       *         worktreeBasePath: string
+       *       }
+       *       projectId: string
+       *       statusAhead: number
+       *       statusBehind: number
+       *       statusConflicts: number
+       *       statusModified: number
+       *       statusStaged: number
+       *       statusUntracked: number
+       *       statusUpdatedAt: string | null
+       *       updatedAt: string
+       *     }
+       *     worktreeId: string | null
+       *   }
+       * }
+       * ```
+       */
+      getById<
+        Config extends Alova2MethodConfig<ItemResponseTaskTableBody> & {
+          pathParams: {
+            id: string;
+          };
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemResponseTaskTableBody, 'task.getById', Config>;
+      /**
+       * ---
+       *
+       * [PATCH] 更新任务
+       *
+       * **path:** /api/v1/tasks/{id}
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **RequestBody**
+       * ```ts
+       * type RequestBody = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 任务描述
+       *   description: string | null
+       *   // 截止日期
+       *   dueDate: string | null
+       *   // 优先级
+       *   priority: number | null
+       *   // 标签
+       *   // [params1] start
+       *   // [items] start
+       *   // [items] end
+       *   // [params1] end
+       *   tags: string[] | null
+       *   // 任务标题
+       *   title: string | null
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应对象
+       *   item: {
+       *     completedAt: string | null
+       *     createdAt: string
+       *     deletedAt: {
+       *       Time: string
+       *       Valid: boolean
+       *     }
+       *     description: string
+       *     dueDate: string | null
+       *     id: string
+       *     orderIndex: number
+       *     priority: number
+       *     project?: {
+       *       createdAt: string
+       *       defaultBranch: string
+       *       deletedAt: {
+       *         Time: string
+       *         Valid: boolean
+       *       }
+       *       description: string
+       *       id: string
+       *       lastSyncAt: string | null
+       *       name: string
+       *       path: string
+       *       remoteUrl: string
+       *       updatedAt: string
+       *       worktreeBasePath: string
+       *     }
+       *     projectId: string
+       *     status: string
+       *     // [params1] start
+       *     // [items] start
+       *     // [items] end
+       *     // [params1] end
+       *     tags: string[] | null
+       *     title: string
+       *     updatedAt: string
+       *     worktree?: {
+       *       branchName: string
+       *       createdAt: string
+       *       deletedAt: {
+       *         Time: string
+       *         Valid: boolean
+       *       }
+       *       headCommit: string
+       *       id: string
+       *       isBare: boolean
+       *       isMain: boolean
+       *       path: string
+       *       project?: {
+       *         createdAt: string
+       *         defaultBranch: string
+       *         deletedAt: {
+       *           Time: string
+       *           Valid: boolean
+       *         }
+       *         description: string
+       *         id: string
+       *         lastSyncAt: string | null
+       *         name: string
+       *         path: string
+       *         remoteUrl: string
+       *         updatedAt: string
+       *         worktreeBasePath: string
+       *       }
+       *       projectId: string
+       *       statusAhead: number
+       *       statusBehind: number
+       *       statusConflicts: number
+       *       statusModified: number
+       *       statusStaged: number
+       *       statusUntracked: number
+       *       statusUpdatedAt: string | null
+       *       updatedAt: string
+       *     }
+       *     worktreeId: string | null
+       *   }
+       * }
+       * ```
+       */
+      update<
+        Config extends Alova2MethodConfig<ItemResponseTaskTableBody> & {
+          pathParams: {
+            id: string;
+          };
+          data: UpdateTaskBody;
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemResponseTaskTableBody, 'task.update', Config>;
+      /**
+       * ---
+       *
+       * [POST] 绑定/解绑 Worktree
+       *
+       * **path:** /api/v1/tasks/{id}/bind-worktree
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **RequestBody**
+       * ```ts
+       * type RequestBody = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // Worktree ID（null 表示解绑）
+       *   worktreeId: string | null
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应对象
+       *   item: {
+       *     completedAt: string | null
+       *     createdAt: string
+       *     deletedAt: {
+       *       Time: string
+       *       Valid: boolean
+       *     }
+       *     description: string
+       *     dueDate: string | null
+       *     id: string
+       *     orderIndex: number
+       *     priority: number
+       *     project?: {
+       *       createdAt: string
+       *       defaultBranch: string
+       *       deletedAt: {
+       *         Time: string
+       *         Valid: boolean
+       *       }
+       *       description: string
+       *       id: string
+       *       lastSyncAt: string | null
+       *       name: string
+       *       path: string
+       *       remoteUrl: string
+       *       updatedAt: string
+       *       worktreeBasePath: string
+       *     }
+       *     projectId: string
+       *     status: string
+       *     // [params1] start
+       *     // [items] start
+       *     // [items] end
+       *     // [params1] end
+       *     tags: string[] | null
+       *     title: string
+       *     updatedAt: string
+       *     worktree?: {
+       *       branchName: string
+       *       createdAt: string
+       *       deletedAt: {
+       *         Time: string
+       *         Valid: boolean
+       *       }
+       *       headCommit: string
+       *       id: string
+       *       isBare: boolean
+       *       isMain: boolean
+       *       path: string
+       *       project?: {
+       *         createdAt: string
+       *         defaultBranch: string
+       *         deletedAt: {
+       *           Time: string
+       *           Valid: boolean
+       *         }
+       *         description: string
+       *         id: string
+       *         lastSyncAt: string | null
+       *         name: string
+       *         path: string
+       *         remoteUrl: string
+       *         updatedAt: string
+       *         worktreeBasePath: string
+       *       }
+       *       projectId: string
+       *       statusAhead: number
+       *       statusBehind: number
+       *       statusConflicts: number
+       *       statusModified: number
+       *       statusStaged: number
+       *       statusUntracked: number
+       *       statusUpdatedAt: string | null
+       *       updatedAt: string
+       *     }
+       *     worktreeId: string | null
+       *   }
+       * }
+       * ```
+       */
+      bindWorktree<
+        Config extends Alova2MethodConfig<ItemResponseTaskTableBody> & {
+          pathParams: {
+            id: string;
+          };
+          data: BindWorktreeBody;
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemResponseTaskTableBody, 'task.bindWorktree', Config>;
+      /**
+       * ---
+       *
+       * [POST] 移动任务
+       *
+       * **path:** /api/v1/tasks/{id}/move
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **RequestBody**
+       * ```ts
+       * type RequestBody = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 排序索引
+       *   orderIndex: number | null
+       *   // 新状态
+       *   status: string
+       *   // 关联 Worktree
+       *   worktreeId: string | null
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应对象
+       *   item: {
+       *     completedAt: string | null
+       *     createdAt: string
+       *     deletedAt: {
+       *       Time: string
+       *       Valid: boolean
+       *     }
+       *     description: string
+       *     dueDate: string | null
+       *     id: string
+       *     orderIndex: number
+       *     priority: number
+       *     project?: {
+       *       createdAt: string
+       *       defaultBranch: string
+       *       deletedAt: {
+       *         Time: string
+       *         Valid: boolean
+       *       }
+       *       description: string
+       *       id: string
+       *       lastSyncAt: string | null
+       *       name: string
+       *       path: string
+       *       remoteUrl: string
+       *       updatedAt: string
+       *       worktreeBasePath: string
+       *     }
+       *     projectId: string
+       *     status: string
+       *     // [params1] start
+       *     // [items] start
+       *     // [items] end
+       *     // [params1] end
+       *     tags: string[] | null
+       *     title: string
+       *     updatedAt: string
+       *     worktree?: {
+       *       branchName: string
+       *       createdAt: string
+       *       deletedAt: {
+       *         Time: string
+       *         Valid: boolean
+       *       }
+       *       headCommit: string
+       *       id: string
+       *       isBare: boolean
+       *       isMain: boolean
+       *       path: string
+       *       project?: {
+       *         createdAt: string
+       *         defaultBranch: string
+       *         deletedAt: {
+       *           Time: string
+       *           Valid: boolean
+       *         }
+       *         description: string
+       *         id: string
+       *         lastSyncAt: string | null
+       *         name: string
+       *         path: string
+       *         remoteUrl: string
+       *         updatedAt: string
+       *         worktreeBasePath: string
+       *       }
+       *       projectId: string
+       *       statusAhead: number
+       *       statusBehind: number
+       *       statusConflicts: number
+       *       statusModified: number
+       *       statusStaged: number
+       *       statusUntracked: number
+       *       statusUpdatedAt: string | null
+       *       updatedAt: string
+       *     }
+       *     worktreeId: string | null
+       *   }
+       * }
+       * ```
+       */
+      move<
+        Config extends Alova2MethodConfig<ItemResponseTaskTableBody> & {
+          pathParams: {
+            id: string;
+          };
+          data: MoveTaskBody;
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemResponseTaskTableBody, 'task.move', Config>;
+    };
+    system: {
+      /**
+       * ---
+       *
+       * [POST] 打开文件管理器
+       *
+       * **path:** /api/v1/system/open-explorer
+       *
+       * ---
+       *
+       * **RequestBody**
+       * ```ts
+       * type RequestBody = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 目标路径
+       *   path: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 提示信息
+       *   message: string
+       * }
+       * ```
+       */
+      openExplorer<
+        Config extends Alova2MethodConfig<MessageResponseBody> & {
+          data: OpenPathInputBody;
+        }
+      >(
+        config: Config
+      ): Alova2Method<MessageResponseBody, 'system.openExplorer', Config>;
+      /**
+       * ---
+       *
+       * [POST] 打开终端
+       *
+       * **path:** /api/v1/system/open-terminal
+       *
+       * ---
+       *
+       * **RequestBody**
+       * ```ts
+       * type RequestBody = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 目标路径
+       *   path: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 提示信息
+       *   message: string
+       * }
+       * ```
+       */
+      openTerminal<
+        Config extends Alova2MethodConfig<MessageResponseBody> & {
+          data: OpenPathInputBody;
+        }
+      >(
+        config: Config
+      ): Alova2Method<MessageResponseBody, 'system.openTerminal', Config>;
+    };
+    taskComment: {
+      /**
+       * ---
+       *
+       * [DELETE] 删除评论
+       *
+       * **path:** /api/v1/task-comments/{id}
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 提示信息
+       *   message: string
+       * }
+       * ```
+       */
+      delete<
+        Config extends Alova2MethodConfig<MessageResponseBody> & {
+          pathParams: {
+            id: string;
+          };
+        }
+      >(
+        config: Config
+      ): Alova2Method<MessageResponseBody, 'taskComment.delete', Config>;
+      /**
+       * ---
+       *
+       * [GET] 评论列表
+       *
+       * **path:** /api/v1/tasks/{id}/comments
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应列表
+       *   // [params1] start
+       *   // [items] start
+       *   // [items] end
+       *   // [params1] end
+       *   items: Array<{
+       *     content: string
+       *     createdAt: string
+       *     deletedAt: {
+       *       Time: string
+       *       Valid: boolean
+       *     }
+       *     id: string
+       *     task?: {
+       *       completedAt: string | null
+       *       createdAt: string
+       *       deletedAt: {
+       *         Time: string
+       *         Valid: boolean
+       *       }
+       *       description: string
+       *       dueDate: string | null
+       *       id: string
+       *       orderIndex: number
+       *       priority: number
+       *       project?: {
+       *         createdAt: string
+       *         defaultBranch: string
+       *         deletedAt: {
+       *           Time: string
+       *           Valid: boolean
+       *         }
+       *         description: string
+       *         id: string
+       *         lastSyncAt: string | null
+       *         name: string
+       *         path: string
+       *         remoteUrl: string
+       *         updatedAt: string
+       *         worktreeBasePath: string
+       *       }
+       *       projectId: string
+       *       status: string
+       *       // [params1] start
+       *       // [items] start
+       *       // [items] end
+       *       // [params1] end
+       *       tags: string[] | null
+       *       title: string
+       *       updatedAt: string
+       *       worktree?: {
+       *         branchName: string
+       *         createdAt: string
+       *         deletedAt: {
+       *           Time: string
+       *           Valid: boolean
+       *         }
+       *         headCommit: string
+       *         id: string
+       *         isBare: boolean
+       *         isMain: boolean
+       *         path: string
+       *         project?: {
+       *           createdAt: string
+       *           defaultBranch: string
+       *           deletedAt: {
+       *             Time: string
+       *             Valid: boolean
+       *           }
+       *           description: string
+       *           id: string
+       *           lastSyncAt: string | null
+       *           name: string
+       *           path: string
+       *           remoteUrl: string
+       *           updatedAt: string
+       *           worktreeBasePath: string
+       *         }
+       *         projectId: string
+       *         statusAhead: number
+       *         statusBehind: number
+       *         statusConflicts: number
+       *         statusModified: number
+       *         statusStaged: number
+       *         statusUntracked: number
+       *         statusUpdatedAt: string | null
+       *         updatedAt: string
+       *       }
+       *       worktreeId: string | null
+       *     }
+       *     taskId: string
+       *     updatedAt: string
+       *   }> | null
+       * }
+       * ```
+       */
+      list<
+        Config extends Alova2MethodConfig<ItemsResponseTaskCommentTableBody> & {
+          pathParams: {
+            id: string;
+          };
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemsResponseTaskCommentTableBody, 'taskComment.list', Config>;
+      /**
+       * ---
+       *
+       * [POST] 新增评论
+       *
+       * **path:** /api/v1/tasks/{id}/comments
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **RequestBody**
+       * ```ts
+       * type RequestBody = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 评论内容
+       *   content: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应对象
+       *   item: {
+       *     content: string
+       *     createdAt: string
+       *     deletedAt: {
+       *       Time: string
+       *       Valid: boolean
+       *     }
+       *     id: string
+       *     task?: {
+       *       completedAt: string | null
+       *       createdAt: string
+       *       deletedAt: {
+       *         Time: string
+       *         Valid: boolean
+       *       }
+       *       description: string
+       *       dueDate: string | null
+       *       id: string
+       *       orderIndex: number
+       *       priority: number
+       *       project?: {
+       *         createdAt: string
+       *         defaultBranch: string
+       *         deletedAt: {
+       *           Time: string
+       *           Valid: boolean
+       *         }
+       *         description: string
+       *         id: string
+       *         lastSyncAt: string | null
+       *         name: string
+       *         path: string
+       *         remoteUrl: string
+       *         updatedAt: string
+       *         worktreeBasePath: string
+       *       }
+       *       projectId: string
+       *       status: string
+       *       // [params1] start
+       *       // [items] start
+       *       // [items] end
+       *       // [params1] end
+       *       tags: string[] | null
+       *       title: string
+       *       updatedAt: string
+       *       worktree?: {
+       *         branchName: string
+       *         createdAt: string
+       *         deletedAt: {
+       *           Time: string
+       *           Valid: boolean
+       *         }
+       *         headCommit: string
+       *         id: string
+       *         isBare: boolean
+       *         isMain: boolean
+       *         path: string
+       *         project?: {
+       *           createdAt: string
+       *           defaultBranch: string
+       *           deletedAt: {
+       *             Time: string
+       *             Valid: boolean
+       *           }
+       *           description: string
+       *           id: string
+       *           lastSyncAt: string | null
+       *           name: string
+       *           path: string
+       *           remoteUrl: string
+       *           updatedAt: string
+       *           worktreeBasePath: string
+       *         }
+       *         projectId: string
+       *         statusAhead: number
+       *         statusBehind: number
+       *         statusConflicts: number
+       *         statusModified: number
+       *         statusStaged: number
+       *         statusUntracked: number
+       *         statusUpdatedAt: string | null
+       *         updatedAt: string
+       *       }
+       *       worktreeId: string | null
+       *     }
+       *     taskId: string
+       *     updatedAt: string
+       *   }
+       * }
+       * ```
+       */
+      create<
+        Config extends Alova2MethodConfig<ItemResponseTaskCommentTableBody> & {
+          pathParams: {
+            id: string;
+          };
+          data: CreateCommentBody;
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemResponseTaskCommentTableBody, 'taskComment.create', Config>;
+    };
+  }
 
   var Apis: Apis;
 }

@@ -1,19 +1,41 @@
 package model
 
 import (
+	"reflect"
+
 	"go-template/model/tables"
+	"go-template/utils"
+	"go.uber.org/zap"
 )
 
 func GetAllModels() []any {
 	return []any{
-		&tables.ExampleUserTable{},
+		&tables.UserTable{},
+		&tables.UserAccessTokenTable{},
+		&tables.ProjectTable{},
+		&tables.WorktreeTable{},
+		&tables.TaskTable{},
+		&tables.TaskCommentTable{},
 	}
 }
 
 func DBMigrate(autoMigrate bool) {
-	if !autoMigrate {
+	if !autoMigrate || db == nil {
 		return
 	}
 
-	db.AutoMigrate(GetAllModels()...)
+	logger := utils.Logger()
+	logger.Info("database migration started")
+
+	for _, model := range GetAllModels() {
+		if err := db.AutoMigrate(model); err != nil {
+			logger.Error("database migration failed",
+				zap.Error(err),
+				zap.String("model", reflect.TypeOf(model).String()),
+			)
+			panic(err)
+		}
+	}
+
+	logger.Info("database migration finished")
 }

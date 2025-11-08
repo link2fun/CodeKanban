@@ -24,17 +24,209 @@ func New(db DBTX) *Queries {
 func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	q := Queries{db: db}
 	var err error
+	if q.accessTokenCreateStmt, err = db.PrepareContext(ctx, accessTokenCreate); err != nil {
+		return nil, fmt.Errorf("error preparing query AccessTokenCreate: %w", err)
+	}
+	if q.accessTokenDeleteAllByUserIdStmt, err = db.PrepareContext(ctx, accessTokenDeleteAllByUserId); err != nil {
+		return nil, fmt.Errorf("error preparing query AccessTokenDeleteAllByUserId: %w", err)
+	}
+	if q.accessTokenGetByIdStmt, err = db.PrepareContext(ctx, accessTokenGetById); err != nil {
+		return nil, fmt.Errorf("error preparing query AccessTokenGetById: %w", err)
+	}
+	if q.accessTokenRefreshStmt, err = db.PrepareContext(ctx, accessTokenRefresh); err != nil {
+		return nil, fmt.Errorf("error preparing query AccessTokenRefresh: %w", err)
+	}
 	if q.getOneStmt, err = db.PrepareContext(ctx, getOne); err != nil {
 		return nil, fmt.Errorf("error preparing query GetOne: %w", err)
+	}
+	if q.projectCreateStmt, err = db.PrepareContext(ctx, projectCreate); err != nil {
+		return nil, fmt.Errorf("error preparing query ProjectCreate: %w", err)
+	}
+	if q.projectGetByIDStmt, err = db.PrepareContext(ctx, projectGetByID); err != nil {
+		return nil, fmt.Errorf("error preparing query ProjectGetByID: %w", err)
+	}
+	if q.projectListStmt, err = db.PrepareContext(ctx, projectList); err != nil {
+		return nil, fmt.Errorf("error preparing query ProjectList: %w", err)
+	}
+	if q.projectSoftDeleteStmt, err = db.PrepareContext(ctx, projectSoftDelete); err != nil {
+		return nil, fmt.Errorf("error preparing query ProjectSoftDelete: %w", err)
+	}
+	if q.taskCountByWorktreeStmt, err = db.PrepareContext(ctx, taskCountByWorktree); err != nil {
+		return nil, fmt.Errorf("error preparing query TaskCountByWorktree: %w", err)
+	}
+	if q.userCreateStmt, err = db.PrepareContext(ctx, userCreate); err != nil {
+		return nil, fmt.Errorf("error preparing query UserCreate: %w", err)
+	}
+	if q.userDeleteStmt, err = db.PrepareContext(ctx, userDelete); err != nil {
+		return nil, fmt.Errorf("error preparing query UserDelete: %w", err)
+	}
+	if q.userDisableStmt, err = db.PrepareContext(ctx, userDisable); err != nil {
+		return nil, fmt.Errorf("error preparing query UserDisable: %w", err)
+	}
+	if q.userGetByIdStmt, err = db.PrepareContext(ctx, userGetById); err != nil {
+		return nil, fmt.Errorf("error preparing query UserGetById: %w", err)
+	}
+	if q.userGetByUsernameStmt, err = db.PrepareContext(ctx, userGetByUsername); err != nil {
+		return nil, fmt.Errorf("error preparing query UserGetByUsername: %w", err)
+	}
+	if q.userListStmt, err = db.PrepareContext(ctx, userList); err != nil {
+		return nil, fmt.Errorf("error preparing query UserList: %w", err)
+	}
+	if q.userListCountStmt, err = db.PrepareContext(ctx, userListCount); err != nil {
+		return nil, fmt.Errorf("error preparing query UserListCount: %w", err)
+	}
+	if q.userUpdateInfoStmt, err = db.PrepareContext(ctx, userUpdateInfo); err != nil {
+		return nil, fmt.Errorf("error preparing query UserUpdateInfo: %w", err)
+	}
+	if q.userUpdatePasswordStmt, err = db.PrepareContext(ctx, userUpdatePassword); err != nil {
+		return nil, fmt.Errorf("error preparing query UserUpdatePassword: %w", err)
+	}
+	if q.worktreeCreateStmt, err = db.PrepareContext(ctx, worktreeCreate); err != nil {
+		return nil, fmt.Errorf("error preparing query WorktreeCreate: %w", err)
+	}
+	if q.worktreeGetByIDStmt, err = db.PrepareContext(ctx, worktreeGetByID); err != nil {
+		return nil, fmt.Errorf("error preparing query WorktreeGetByID: %w", err)
+	}
+	if q.worktreeListByProjectStmt, err = db.PrepareContext(ctx, worktreeListByProject); err != nil {
+		return nil, fmt.Errorf("error preparing query WorktreeListByProject: %w", err)
+	}
+	if q.worktreeSoftDeleteStmt, err = db.PrepareContext(ctx, worktreeSoftDelete); err != nil {
+		return nil, fmt.Errorf("error preparing query WorktreeSoftDelete: %w", err)
+	}
+	if q.worktreeUpdateMetadataStmt, err = db.PrepareContext(ctx, worktreeUpdateMetadata); err != nil {
+		return nil, fmt.Errorf("error preparing query WorktreeUpdateMetadata: %w", err)
+	}
+	if q.worktreeUpdateStatusStmt, err = db.PrepareContext(ctx, worktreeUpdateStatus); err != nil {
+		return nil, fmt.Errorf("error preparing query WorktreeUpdateStatus: %w", err)
 	}
 	return &q, nil
 }
 
 func (q *Queries) Close() error {
 	var err error
+	if q.accessTokenCreateStmt != nil {
+		if cerr := q.accessTokenCreateStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing accessTokenCreateStmt: %w", cerr)
+		}
+	}
+	if q.accessTokenDeleteAllByUserIdStmt != nil {
+		if cerr := q.accessTokenDeleteAllByUserIdStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing accessTokenDeleteAllByUserIdStmt: %w", cerr)
+		}
+	}
+	if q.accessTokenGetByIdStmt != nil {
+		if cerr := q.accessTokenGetByIdStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing accessTokenGetByIdStmt: %w", cerr)
+		}
+	}
+	if q.accessTokenRefreshStmt != nil {
+		if cerr := q.accessTokenRefreshStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing accessTokenRefreshStmt: %w", cerr)
+		}
+	}
 	if q.getOneStmt != nil {
 		if cerr := q.getOneStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getOneStmt: %w", cerr)
+		}
+	}
+	if q.projectCreateStmt != nil {
+		if cerr := q.projectCreateStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing projectCreateStmt: %w", cerr)
+		}
+	}
+	if q.projectGetByIDStmt != nil {
+		if cerr := q.projectGetByIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing projectGetByIDStmt: %w", cerr)
+		}
+	}
+	if q.projectListStmt != nil {
+		if cerr := q.projectListStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing projectListStmt: %w", cerr)
+		}
+	}
+	if q.projectSoftDeleteStmt != nil {
+		if cerr := q.projectSoftDeleteStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing projectSoftDeleteStmt: %w", cerr)
+		}
+	}
+	if q.taskCountByWorktreeStmt != nil {
+		if cerr := q.taskCountByWorktreeStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing taskCountByWorktreeStmt: %w", cerr)
+		}
+	}
+	if q.userCreateStmt != nil {
+		if cerr := q.userCreateStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing userCreateStmt: %w", cerr)
+		}
+	}
+	if q.userDeleteStmt != nil {
+		if cerr := q.userDeleteStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing userDeleteStmt: %w", cerr)
+		}
+	}
+	if q.userDisableStmt != nil {
+		if cerr := q.userDisableStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing userDisableStmt: %w", cerr)
+		}
+	}
+	if q.userGetByIdStmt != nil {
+		if cerr := q.userGetByIdStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing userGetByIdStmt: %w", cerr)
+		}
+	}
+	if q.userGetByUsernameStmt != nil {
+		if cerr := q.userGetByUsernameStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing userGetByUsernameStmt: %w", cerr)
+		}
+	}
+	if q.userListStmt != nil {
+		if cerr := q.userListStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing userListStmt: %w", cerr)
+		}
+	}
+	if q.userListCountStmt != nil {
+		if cerr := q.userListCountStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing userListCountStmt: %w", cerr)
+		}
+	}
+	if q.userUpdateInfoStmt != nil {
+		if cerr := q.userUpdateInfoStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing userUpdateInfoStmt: %w", cerr)
+		}
+	}
+	if q.userUpdatePasswordStmt != nil {
+		if cerr := q.userUpdatePasswordStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing userUpdatePasswordStmt: %w", cerr)
+		}
+	}
+	if q.worktreeCreateStmt != nil {
+		if cerr := q.worktreeCreateStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing worktreeCreateStmt: %w", cerr)
+		}
+	}
+	if q.worktreeGetByIDStmt != nil {
+		if cerr := q.worktreeGetByIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing worktreeGetByIDStmt: %w", cerr)
+		}
+	}
+	if q.worktreeListByProjectStmt != nil {
+		if cerr := q.worktreeListByProjectStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing worktreeListByProjectStmt: %w", cerr)
+		}
+	}
+	if q.worktreeSoftDeleteStmt != nil {
+		if cerr := q.worktreeSoftDeleteStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing worktreeSoftDeleteStmt: %w", cerr)
+		}
+	}
+	if q.worktreeUpdateMetadataStmt != nil {
+		if cerr := q.worktreeUpdateMetadataStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing worktreeUpdateMetadataStmt: %w", cerr)
+		}
+	}
+	if q.worktreeUpdateStatusStmt != nil {
+		if cerr := q.worktreeUpdateStatusStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing worktreeUpdateStatusStmt: %w", cerr)
 		}
 	}
 	return err
@@ -74,15 +266,63 @@ func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, ar
 }
 
 type Queries struct {
-	db         DBTX
-	tx         *sql.Tx
-	getOneStmt *sql.Stmt
+	db                               DBTX
+	tx                               *sql.Tx
+	accessTokenCreateStmt            *sql.Stmt
+	accessTokenDeleteAllByUserIdStmt *sql.Stmt
+	accessTokenGetByIdStmt           *sql.Stmt
+	accessTokenRefreshStmt           *sql.Stmt
+	getOneStmt                       *sql.Stmt
+	projectCreateStmt                *sql.Stmt
+	projectGetByIDStmt               *sql.Stmt
+	projectListStmt                  *sql.Stmt
+	projectSoftDeleteStmt            *sql.Stmt
+	taskCountByWorktreeStmt          *sql.Stmt
+	userCreateStmt                   *sql.Stmt
+	userDeleteStmt                   *sql.Stmt
+	userDisableStmt                  *sql.Stmt
+	userGetByIdStmt                  *sql.Stmt
+	userGetByUsernameStmt            *sql.Stmt
+	userListStmt                     *sql.Stmt
+	userListCountStmt                *sql.Stmt
+	userUpdateInfoStmt               *sql.Stmt
+	userUpdatePasswordStmt           *sql.Stmt
+	worktreeCreateStmt               *sql.Stmt
+	worktreeGetByIDStmt              *sql.Stmt
+	worktreeListByProjectStmt        *sql.Stmt
+	worktreeSoftDeleteStmt           *sql.Stmt
+	worktreeUpdateMetadataStmt       *sql.Stmt
+	worktreeUpdateStatusStmt         *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
-		db:         tx,
-		tx:         tx,
-		getOneStmt: q.getOneStmt,
+		db:                               tx,
+		tx:                               tx,
+		accessTokenCreateStmt:            q.accessTokenCreateStmt,
+		accessTokenDeleteAllByUserIdStmt: q.accessTokenDeleteAllByUserIdStmt,
+		accessTokenGetByIdStmt:           q.accessTokenGetByIdStmt,
+		accessTokenRefreshStmt:           q.accessTokenRefreshStmt,
+		getOneStmt:                       q.getOneStmt,
+		projectCreateStmt:                q.projectCreateStmt,
+		projectGetByIDStmt:               q.projectGetByIDStmt,
+		projectListStmt:                  q.projectListStmt,
+		projectSoftDeleteStmt:            q.projectSoftDeleteStmt,
+		taskCountByWorktreeStmt:          q.taskCountByWorktreeStmt,
+		userCreateStmt:                   q.userCreateStmt,
+		userDeleteStmt:                   q.userDeleteStmt,
+		userDisableStmt:                  q.userDisableStmt,
+		userGetByIdStmt:                  q.userGetByIdStmt,
+		userGetByUsernameStmt:            q.userGetByUsernameStmt,
+		userListStmt:                     q.userListStmt,
+		userListCountStmt:                q.userListCountStmt,
+		userUpdateInfoStmt:               q.userUpdateInfoStmt,
+		userUpdatePasswordStmt:           q.userUpdatePasswordStmt,
+		worktreeCreateStmt:               q.worktreeCreateStmt,
+		worktreeGetByIDStmt:              q.worktreeGetByIDStmt,
+		worktreeListByProjectStmt:        q.worktreeListByProjectStmt,
+		worktreeSoftDeleteStmt:           q.worktreeSoftDeleteStmt,
+		worktreeUpdateMetadataStmt:       q.worktreeUpdateMetadataStmt,
+		worktreeUpdateStatusStmt:         q.worktreeUpdateStatusStmt,
 	}
 }

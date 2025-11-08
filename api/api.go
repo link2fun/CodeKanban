@@ -47,7 +47,10 @@ func Init(ctx context.Context, cfg *utils.AppConfig, assets embed.FS) error {
 	humaTypesRegister()
 
 	registerHealthRoutes(app, humaAPI)
-	registerExampleUserRoutes(v1)
+	registerProjectRoutes(v1)
+	registerWorktreeRoutes(v1)
+	registerTaskRoutes(v1)
+	registerSystemRoutes(v1)
 	mountStatic(app, cfg, assets, logger)
 	exposeOpenAPI(app, humaAPI, cfg, logger)
 
@@ -58,10 +61,11 @@ func Init(ctx context.Context, cfg *utils.AppConfig, assets embed.FS) error {
 // registerHealthRoutes 注册健康探测接口，用于服务监控
 func registerHealthRoutes(app *fiber.App, api huma.API) {
 	huma.Register(api, huma.Operation{
-		OperationID: "health",
+		OperationID: "health-check",
 		Method:      http.MethodGet,
 		Path:        "/api/v1/health",
 		Summary:     "健康探测",
+		Tags:        []string{"health-健康检查"},
 	}, func(ctx context.Context, _ *struct{}) (*h.MessageResponse, error) {
 		resp := h.NewMessageResponse("ok")
 		resp.Status = http.StatusOK

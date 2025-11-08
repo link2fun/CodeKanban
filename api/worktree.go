@@ -1,0 +1,180 @@
+package api
+
+import (
+	"context"
+	"errors"
+	"net/http"
+
+	"github.com/danielgtaylor/huma/v2"
+
+	"go-template/api/h"
+	"go-template/model"
+)
+
+const worktreeTag = "worktree-工作树"
+
+type createWorktreeInput struct {
+	Body struct {
+		BranchName   string `json:"branchName" doc:"分支名称" required:"true"`
+		BaseBranch   string `json:"baseBranch" doc:"基础分支" default:""`
+		CreateBranch bool   `json:"createBranch" doc:"是否创建新分支" default:"true"`
+	} `json:"body"`
+}
+
+func registerWorktreeRoutes(group *huma.Group) {
+	service := model.NewWorktreeService()
+
+	huma.Post(group, "/projects/{projectId}/worktrees", func(
+		ctx context.Context,
+		input *struct {
+			ProjectID string `path:"projectId"`
+			createWorktreeInput
+		},
+	) (*h.ItemResponse[model.Worktree], error) {
+		worktree, err := service.CreateWorktree(
+			ctx,
+			input.ProjectID,
+			input.Body.BranchName,
+			input.Body.BaseBranch,
+			input.Body.CreateBranch,
+		)
+		if err != nil {
+			return nil, mapWorktreeError(err)
+		}
+
+		resp := h.NewItemResponse(*worktree)
+		resp.Status = http.StatusCreated
+		return resp, nil
+	}, func(op *huma.Operation) {
+		op.OperationID = "worktree-create"
+		op.Summary = "创建 Worktree"
+		op.Tags = []string{worktreeTag}
+	})
+
+	huma.Get(group, "/projects/{projectId}/worktrees", func(
+		ctx context.Context,
+		input *struct {
+			ProjectID string `path:"projectId"`
+		},
+	) (*h.ItemsResponse[*model.Worktree], error) {
+		worktrees, err := service.ListWorktrees(ctx, input.ProjectID)
+		if err != nil {
+			if errors.Is(err, model.ErrDBNotInitialized) {
+				return nil, huma.Error503ServiceUnavailable("database is not initialized")
+			}
+			return nil, huma.Error500InternalServerError("failed to list worktrees", err)
+		}
+
+		resp := h.NewItemsResponse(worktrees)
+		resp.Status = http.StatusOK
+		return resp, nil
+	}, func(op *huma.Operation) {
+		op.OperationID = "worktree-list-by-project"
+		op.Summary = "获取 Worktree 列表"
+		op.Tags = []string{worktreeTag}
+	})
+
+	huma.Delete(group, "/worktrees/{id}", func(
+		ctx context.Context,
+		input *struct {
+			ID           string `path:"id"`
+			Force        bool   `query:"force" default:"false"`
+			DeleteBranch bool   `query:"deleteBranch" default:"false"`
+		},
+	) (*h.MessageResponse, error) {
+		if err := service.DeleteWorktree(ctx, input.ID, input.Force, input.DeleteBranch); err != nil {
+			return nil, mapWorktreeError(err)
+		}
+
+		resp := h.NewMessageResponse("worktree deleted successfully")
+		resp.Status = http.StatusOK
+		return resp, nil
+	}, func(op *huma.Operation) {
+		op.OperationID = "worktree-delete"
+		op.Summary = "删除 Worktree"
+		op.Tags = []string{worktreeTag}
+	})
+
+	huma.Post(group, "/worktrees/{id}/refresh-status", func(
+		ctx context.Context,
+		input *struct {
+			ID string `path:"id"`
+		},
+	) (*h.ItemResponse[model.Worktree], error) {
+		worktree, err := service.RefreshWorktreeStatus(ctx, input.ID)
+		if err != nil {
+			return nil, mapWorktreeError(err)
+		}
+
+		resp := h.NewItemResponse(*worktree)
+		resp.Status = http.StatusOK
+		return resp, nil
+	}, func(op *huma.Operation) {
+		op.OperationID = "worktree-refresh-status"
+		op.Summary = "刷新 Worktree 状态"
+		op.Tags = []string{worktreeTag}
+	})
+
+	huma.Post(group, "/projects/{projectId}/refresh-all-worktrees", func(
+		ctx context.Context,
+		input *struct {
+			ProjectID string `path:"projectId"`
+		},
+	) (*h.ItemResponse[refreshAllResult], error) {
+		updated, failed, err := service.RefreshAllWorktrees(ctx, input.ProjectID)
+		if err != nil {
+			return nil, mapWorktreeError(err)
+		}
+
+		resp := h.NewItemResponse(refreshAllResult{
+			Updated: updated,
+			Failed:  failed,
+		})
+		resp.Status = http.StatusOK
+		return resp, nil
+	}, func(op *huma.Operation) {
+		op.OperationID = "worktree-refresh-all-by-project"
+		op.Summary = "刷新所有 Worktree 状态"
+		op.Tags = []string{worktreeTag}
+	})
+
+	huma.Post(group, "/projects/{projectId}/sync-worktrees", func(
+		ctx context.Context,
+		input *struct {
+			ProjectID string `path:"projectId"`
+		},
+	) (*h.MessageResponse, error) {
+		if err := service.SyncWorktrees(ctx, input.ProjectID); err != nil {
+			return nil, mapWorktreeError(err)
+		}
+		resp := h.NewMessageResponse("worktrees synced successfully")
+		resp.Status = http.StatusOK
+		return resp, nil
+	}, func(op *huma.Operation) {
+		op.OperationID = "worktree-sync-by-project"
+		op.Summary = "同步 Worktree"
+		op.Tags = []string{worktreeTag}
+	})
+}
+
+func mapWorktreeError(err error) error {
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, model.ErrDBNotInitialized):
+		return huma.Error503ServiceUnavailable("database is not initialized")
+	case errors.Is(err, model.ErrWorktreeNotFound),
+		errors.Is(err, model.ErrProjectNotFound):
+		return huma.Error404NotFound(err.Error())
+	case errors.Is(err, model.ErrWorktreeIsMain),
+		errors.Is(err, model.ErrWorktreeHasTasks):
+		return huma.Error409Conflict(err.Error())
+	default:
+		return huma.Error400BadRequest(err.Error())
+	}
+}
+
+type refreshAllResult struct {
+	Updated int `json:"updated" doc:"刷新成功数量"`
+	Failed  int `json:"failed" doc:"刷新失败数量"`
+}

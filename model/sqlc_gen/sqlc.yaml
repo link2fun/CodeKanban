@@ -18,7 +18,7 @@ sql:
         emit_result_struct_pointers: true  # 查询结果是否返回结构体指针
         emit_params_struct_pointers: true # 入参是否使用结构体指针
         emit_methods_with_db_argument: false # 生成的方法是否把 DB/TX 当参数传入，而非内嵌在 Queries 里
-        emit_pointers_for_null_types: false # 可空列是否用 *T 代替 sql.NullT（仅 pgx 与 SQLite 支持） (暂时没搞懂)
+        emit_pointers_for_null_types: true # 可空列是否用 *T 代替 sql.NullT（仅 pgx 与 SQLite 支持） (暂时没搞懂)
         emit_enum_valid_method: false # 是否为枚举类型生成 Valid() 方法
         emit_all_enum_values: false # 是否为枚举类型生成返回所有合法值的函数
         emit_sql_as_comment: false # 是否在生成的函数上方把 SQL 语句作为注释块输出
@@ -43,3 +43,9 @@ sql:
           - column: "*.deleted_at"
             go_type:
               type: "*time.Time"
+          - column: "worktrees.is_main"
+            go_type: "bool"
+          - column: "worktrees.is_bare"
+            go_type: "bool"
+          - column: "users.disabled"
+            go_type: "bool"

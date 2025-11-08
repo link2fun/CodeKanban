@@ -6,7 +6,7 @@
 - **配置中心**：`utils/app_config.go` 读取 / 写入 `config.yaml`，并提供日志级别、OpenAPI、Huma 文档路径等开关。
 - **日志系统**：`utils/logger.go` 使用 zap，支持控制台与文件双输出。
 - **数据层**：
-  - `model/table` 存放 GORM 表声明（默认只有 `ExampleUserTable` 示范）。
+  - `model/table` 存放 GORM 表声明，可按需扩展具体业务模型。
   - `model` 目录下封装了 GORM 初始化、迁移、关闭等生命周期方法。
   - `model/sqlc_gen` 保留了 schema 生成脚本，若后续需要接入 sqlc，可按需启用。
 - **API 框架**：`api/api.go` 预置 Fiber + Huma 集成，自动挂载 OpenAPI JSON 与自定义 docsPath。

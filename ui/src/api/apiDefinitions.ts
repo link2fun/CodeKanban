@@ -2,7 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * Sealdice New API - version 1.0.0
+ * Go Template API - version 1.0.0
  *
  *
  *
@@ -15,4 +15,28 @@
  *
  * **Do not edit the file manually.**
  */
-export default {};
+export default {
+  'health.check': ['GET', '/api/v1/health'],
+  'project.list': ['GET', '/api/v1/projects'],
+  'project.create': ['POST', '/api/v1/projects'],
+  'project.deleteById': ['DELETE', '/api/v1/projects/{id}'],
+  'project.getById': ['GET', '/api/v1/projects/{id}'],
+  'worktree.refreshAllByProject': ['POST', '/api/v1/projects/{projectId}/refresh-all-worktrees'],
+  'worktree.syncByProject': ['POST', '/api/v1/projects/{projectId}/sync-worktrees'],
+  'task.list': ['GET', '/api/v1/projects/{projectId}/tasks'],
+  'task.create': ['POST', '/api/v1/projects/{projectId}/tasks'],
+  'worktree.listByProject': ['GET', '/api/v1/projects/{projectId}/worktrees'],
+  'worktree.create': ['POST', '/api/v1/projects/{projectId}/worktrees'],
+  'system.openExplorer': ['POST', '/api/v1/system/open-explorer'],
+  'system.openTerminal': ['POST', '/api/v1/system/open-terminal'],
+  'taskComment.delete': ['DELETE', '/api/v1/task-comments/{id}'],
+  'task.delete': ['DELETE', '/api/v1/tasks/{id}'],
+  'task.getById': ['GET', '/api/v1/tasks/{id}'],
+  'task.update': ['PATCH', '/api/v1/tasks/{id}'],
+  'task.bindWorktree': ['POST', '/api/v1/tasks/{id}/bind-worktree'],
+  'taskComment.list': ['GET', '/api/v1/tasks/{id}/comments'],
+  'taskComment.create': ['POST', '/api/v1/tasks/{id}/comments'],
+  'task.move': ['POST', '/api/v1/tasks/{id}/move'],
+  'worktree.delete': ['DELETE', '/api/v1/worktrees/{id}'],
+  'worktree.refreshStatus': ['POST', '/api/v1/worktrees/{id}/refresh-status']
+};
