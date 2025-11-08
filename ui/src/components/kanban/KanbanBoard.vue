@@ -6,12 +6,38 @@
           <h2>任务看板</h2>
           <n-text depth="3">拖拽卡片以重新排序或切换状态</n-text>
         </div>
-        <n-button type="primary" :disabled="!projectId" @click="showCreateDialog = true">
-          <template #icon>
-            <n-icon><AddOutline /></n-icon>
-          </template>
-          新建任务
-        </n-button>
+        <div class="board-header__actions">
+          <n-breadcrumb separator="/">
+            <n-breadcrumb-item>
+              <RouterLink to="/">项目列表</RouterLink>
+            </n-breadcrumb-item>
+            <n-breadcrumb-item>
+              <RouterLink
+                v-if="currentProjectId"
+                :to="{ name: 'project', params: { id: currentProjectId } }"
+              >
+                {{ currentProjectName }}
+              </RouterLink>
+              <span v-else>未选择项目</span>
+            </n-breadcrumb-item>
+          </n-breadcrumb>
+          <n-select
+            style="width: 200px"
+            size="small"
+            :disabled="!projectId"
+            v-model:value="worktreeFilterValue"
+            :options="worktreeFilterOptions"
+            placeholder="全部分支"
+            clearable
+            :consistent-menu-width="false"
+          />
+          <n-button type="primary" :disabled="!projectId" @click="showCreateDialog = true">
+            <template #icon>
+              <n-icon><AddOutline /></n-icon>
+            </template>
+            新建任务
+          </n-button>
+        </div>
       </n-space>
     </div>
 
@@ -24,7 +50,7 @@
             :key="column.key"
             :title="column.title"
             :status="column.key"
-            :tasks="taskStore.tasksByStatus[column.key] ?? []"
+            :tasks="filteredTasksByStatus[column.key] ?? []"
             @task-moved="handleTaskMoved"
             @task-clicked="handleTaskClicked"
           />
@@ -50,6 +76,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { RouterLink } from 'vue-router';
 import { useMessage } from 'naive-ui';
 import { AddOutline } from '@vicons/ionicons5';
 import KanbanColumn from './KanbanColumn.vue';
@@ -57,6 +84,8 @@ import TaskCreateDialog from './TaskCreateDialog.vue';
 import TaskDetailDrawer from './TaskDetailDrawer.vue';
 import { useTaskStore } from '@/stores/task';
 import { useTaskActions } from '@/composables/useTaskActions';
+import { useProjectStore } from '@/stores/project';
+import { extractItems, extractItem } from '@/api/response';
 import type { Task } from '@/types/models';
 
 const props = defineProps<{
@@ -64,6 +93,7 @@ const props = defineProps<{
 }>();
 
 const taskStore = useTaskStore();
+const projectStore = useProjectStore();
 const message = useMessage();
 const { listTasks, moveTask } = useTaskActions();
 
@@ -78,6 +108,41 @@ const columns = [
 ] as const;
 
 const currentProjectId = computed(() => props.projectId ?? '');
+const currentProjectName = computed(() => projectStore.currentProject?.name ?? '未命名项目');
+
+const ALL_WORKTREES_OPTION = '__all__';
+
+const worktreeFilterValue = computed<string | null>({
+  get: () => projectStore.selectedWorktreeId ?? ALL_WORKTREES_OPTION,
+  set: value => {
+    if (!value || value === ALL_WORKTREES_OPTION) {
+      projectStore.setSelectedWorktree(null);
+    } else {
+      projectStore.setSelectedWorktree(value);
+    }
+  },
+});
+
+const worktreeFilterOptions = computed(() => {
+  const options = (projectStore.worktrees ?? []).map(worktree => ({
+    label: worktree.branchName,
+    value: worktree.id,
+  }));
+  return [{ label: '全部分支', value: ALL_WORKTREES_OPTION }, ...options];
+});
+
+const filteredTasksByStatus = computed(() => {
+  const selectedId = projectStore.selectedWorktreeId;
+  const base = taskStore.tasksByStatus;
+  if (!selectedId) {
+    return base;
+  }
+  const buckets: Record<string, Task[]> = {};
+  Object.keys(base).forEach(status => {
+    buckets[status] = base[status].filter(task => task.worktreeId === selectedId);
+  });
+  return buckets;
+});
 
 watch(
   () => currentProjectId.value,
@@ -95,8 +160,8 @@ async function fetchTasks(projectId: string) {
   boardLoading.value = true;
   try {
     const response = await listTasks.send(projectId);
-    const items = response?.body?.items ?? [];
-    taskStore.setTasks(items as Task[]);
+    const items = extractItems<Task>(response);
+    taskStore.setTasks(items);
   } catch (error: any) {
     message.error(error?.message ?? '加载任务失败');
   } finally {
@@ -125,7 +190,7 @@ async function handleTaskMoved(event: { taskId: string; newStatus: Task['status'
 
   try {
     const response = await moveTask.send(taskId, { status: newStatus, orderIndex });
-    const updated = response?.body?.item as Task | undefined;
+    const updated = extractItem<Task>(response);
     if (updated) {
       taskStore.upsertTask(updated);
     }
@@ -142,7 +207,6 @@ function handleTaskClicked(task: Task) {
 
 function handleTaskCreated(task: Task) {
   taskStore.upsertTask(task);
-  message.success('任务创建成功');
 }
 </script>
 
@@ -160,6 +224,12 @@ function handleTaskCreated(task: Task) {
 
 .board-header h2 {
   margin: 0 0 4px;
+}
+
+.board-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .board-body {

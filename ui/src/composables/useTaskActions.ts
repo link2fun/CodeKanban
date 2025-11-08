@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import Apis from '@/api';
 import { useReq } from '@/api/composable';
 import type { Task, TaskComment } from '@/types/models';
@@ -27,6 +28,20 @@ export interface MoveTaskPayload {
 }
 
 export const useTaskActions = () => {
+  const normalizeDueDate = (value?: string | null) => {
+    if (value === undefined) {
+      return undefined;
+    }
+    if (value === null || value === '') {
+      return null;
+    }
+    const parsed = dayjs(value);
+    if (!parsed.isValid()) {
+      return undefined;
+    }
+    return parsed.endOf('day').toISOString();
+  };
+
   const listTasks = useReq((projectId: string) =>
     Apis.task.list({
       pathParams: { projectId },
@@ -49,8 +64,8 @@ export const useTaskActions = () => {
         status: payload.status ?? 'todo',
         priority: payload.priority ?? 0,
         tags: payload.tags ?? [],
-        worktreeId: payload.worktreeId ?? undefined,
-        dueDate: payload.dueDate ?? undefined,
+        worktreeId: payload.worktreeId ?? null,
+        dueDate: normalizeDueDate(payload.dueDate),
       },
     }),
   );
@@ -58,7 +73,10 @@ export const useTaskActions = () => {
   const updateTask = useReq((taskId: string, payload: UpdateTaskPayload) =>
     Apis.task.update({
       pathParams: { id: taskId },
-      data: payload,
+      data: {
+        ...payload,
+        dueDate: normalizeDueDate(payload.dueDate),
+      },
     }),
   );
 

@@ -5,6 +5,8 @@
     title="新建任务"
     :show="show"
     @update:show="emit('update:show', $event as boolean)"
+    :style="dialogStyle"
+    :card-style="dialogCardStyle"
   >
     <n-form ref="formRef" :model="form" :rules="rules" label-width="80">
       <n-form-item label="标题" path="title">
@@ -47,10 +49,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, type CSSProperties } from 'vue';
 import { useMessage, type FormInst, type FormRules } from 'naive-ui';
 import { useProjectStore } from '@/stores/project';
 import { useTaskActions } from '@/composables/useTaskActions';
+import { extractItem } from '@/api/response';
 import type { Task } from '@/types/models';
 
 const props = defineProps<{
@@ -95,7 +98,7 @@ const worktreeOptions = computed(() =>
   })),
 );
 
-const createLoading = ref(false);
+const createLoading = createTask.loading;
 
 watch(
   () => props.show,
@@ -133,7 +136,6 @@ async function handleSubmit() {
     return;
   }
 
-  createLoading.value = true;
   try {
     const response = await createTask.send(props.projectId, {
       title: form.value.title,
@@ -143,23 +145,25 @@ async function handleSubmit() {
       dueDate: form.value.dueDate,
       tags: form.value.tags,
     });
-    const task = response?.body?.item as Task | undefined;
+    const task = extractItem<Task>(response);
     if (task) {
       emit('created', task);
+      message.success('任务创建成功');
       emit('update:show', false);
       resetForm();
     }
   } catch (error: any) {
     message.error(error?.message ?? '创建任务失败');
-  } finally {
-    createLoading.value = false;
   }
 }
-</script>
 
-<style scoped>
-.task-create-dialog {
-  width: 520px;
-  max-width: 90vw;
-}
-</style>
+const dialogStyle: CSSProperties = {
+  width: 'min(90vw, 800px)',
+  maxWidth: '800px',
+};
+
+const dialogCardStyle: CSSProperties = {
+  backgroundColor: 'transparent',
+  boxShadow: 'none',
+};
+</script>

@@ -40,17 +40,20 @@
     </n-alert>
 
     <n-scrollbar style="max-height: calc(100vh - 80px)">
-      <div class="worktree-items">
+      <div v-if="projectStore.worktrees.length" class="worktree-items">
         <WorktreeCard
           v-for="worktree in projectStore.worktrees"
           :key="worktree.id"
           :worktree="worktree"
+          :selected="projectStore.selectedWorktreeId === worktree.id"
+          @select="handleSelectWorktree"
           @refresh="handleRefresh"
           @delete="confirmDelete"
           @open-explorer="handleOpenExplorer"
           @open-terminal="handleOpenTerminal"
         />
       </div>
+      <n-empty v-else description="暂无 Worktree" class="worktree-empty" />
     </n-scrollbar>
 
     <WorktreeCreateDialog
@@ -167,6 +170,14 @@ async function handleWorktreeCreated(worktree?: Worktree) {
     message.success(`Worktree ${worktree.branchName} 创建成功`);
   }
 }
+
+function handleSelectWorktree(worktreeId: string) {
+  if (projectStore.selectedWorktreeId === worktreeId) {
+    projectStore.setSelectedWorktree(null);
+  } else {
+    projectStore.setSelectedWorktree(worktreeId);
+  }
+}
 </script>
 
 <style scoped>
@@ -191,5 +202,9 @@ h3 {
 
 .git-warning {
   margin: 8px 16px;
+}
+
+.worktree-empty {
+  margin: 16px;
 }
 </style>

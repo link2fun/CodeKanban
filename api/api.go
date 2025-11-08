@@ -13,6 +13,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"go.uber.org/zap"
 
@@ -22,7 +23,7 @@ import (
 
 // Init 初始化 Fiber + Huma 的初始化，启动 HTTP 服务
 func Init(ctx context.Context, cfg *utils.AppConfig, assets embed.FS) error {
-	logger := utils.LoggerFromContext(ctx)
+	theLogger := utils.LoggerFromContext(ctx)
 
 	bodyLimit := int(cfg.AttachmentSizeLimit * 1024)
 	if bodyLimit < 1*1024*1024 {
@@ -41,6 +42,7 @@ func Init(ctx context.Context, cfg *utils.AppConfig, assets embed.FS) error {
 		AllowCredentials: cfg.CorsAllowOrigins != "*",
 	}))
 	app.Use(recover.New(recover.Config{EnableStackTrace: true}))
+	app.Use(logger.New())
 	app.Use(compress.New())
 
 	humaAPI, v1 := h.NewAPI(app, cfg)
@@ -51,10 +53,9 @@ func Init(ctx context.Context, cfg *utils.AppConfig, assets embed.FS) error {
 	registerWorktreeRoutes(v1)
 	registerTaskRoutes(v1)
 	registerSystemRoutes(v1)
-	mountStatic(app, cfg, assets, logger)
-	exposeOpenAPI(app, humaAPI, cfg, logger)
+	mountStatic(app, cfg, assets, theLogger)
+	exposeOpenAPI(app, humaAPI, cfg, theLogger)
 
-	logger.Info("HTTP 服务启动", zap.String("addr", cfg.ServeAt))
 	return app.Listen(cfg.ServeAt)
 }
 

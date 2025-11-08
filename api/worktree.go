@@ -6,9 +6,11 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+	"go.uber.org/zap"
 
 	"go-template/api/h"
 	"go-template/model"
+	"go-template/utils"
 )
 
 const worktreeTag = "worktree-工作树"
@@ -57,6 +59,20 @@ func registerWorktreeRoutes(group *huma.Group) {
 			ProjectID string `path:"projectId"`
 		},
 	) (*h.ItemsResponse[*model.Worktree], error) {
+		if err := service.SyncWorktrees(ctx, input.ProjectID); err != nil {
+			switch {
+			case errors.Is(err, model.ErrDBNotInitialized):
+				return nil, huma.Error503ServiceUnavailable("database is not initialized")
+			case errors.Is(err, model.ErrWorktreeNotFound):
+				return nil, huma.Error404NotFound("project not found")
+			default:
+				utils.Logger().Warn("failed to sync worktrees before list",
+					zap.Error(err),
+					zap.String("projectId", input.ProjectID),
+				)
+			}
+		}
+
 		worktrees, err := service.ListWorktrees(ctx, input.ProjectID)
 		if err != nil {
 			if errors.Is(err, model.ErrDBNotInitialized) {

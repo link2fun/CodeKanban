@@ -17,7 +17,6 @@
 
             <n-form-item label="描述">
               <n-input v-model:value="form.description" type="textarea" rows="5" placeholder="使用 Markdown 描述任务" />
-              <div class="task-detail__preview" v-html="descriptionPreview"></div>
             </n-form-item>
 
             <n-form-item label="优先级">
@@ -46,11 +45,6 @@
               <n-dynamic-tags v-model:value="form.tags" />
             </n-form-item>
           </n-form>
-
-          <n-space justify="space-between" style="margin-top: 16px">
-            <n-button type="error" tertiary :loading="deleteLoading" @click="confirmDelete">删除任务</n-button>
-            <n-button type="primary" :loading="saveLoading" @click="handleSave">保存修改</n-button>
-          </n-space>
 
           <n-divider />
 
@@ -88,6 +82,16 @@
           </section>
         </div>
       </n-spin>
+
+      <template #footer>
+        <n-space justify="space-between" style="width: 100%">
+          <n-button tertiary @click="emit('update:show', false)">关闭</n-button>
+          <n-space>
+            <n-button type="error" tertiary :loading="deleteLoading" @click="confirmDelete">删除任务</n-button>
+            <n-button type="primary" :loading="saveLoading" @click="handleSave">保存修改</n-button>
+          </n-space>
+        </n-space>
+      </template>
     </n-drawer-content>
   </n-drawer>
 </template>
@@ -96,10 +100,10 @@
 import { computed, ref, watch } from 'vue';
 import { useDialog, useMessage } from 'naive-ui';
 import dayjs from 'dayjs';
-import { marked } from 'marked';
 import { useTaskStore } from '@/stores/task';
 import { useProjectStore } from '@/stores/project';
 import { useTaskActions } from '@/composables/useTaskActions';
+import { extractItem, extractItems } from '@/api/response';
 import type { Task, TaskComment } from '@/types/models';
 
 const props = defineProps<{
@@ -142,7 +146,6 @@ const task = computed<Task | null>(() => {
   return taskStore.tasks.find(item => item.id === props.taskId) ?? null;
 });
 
-const descriptionPreview = computed(() => marked.parse(form.value.description || ''));
 const comments = computed<TaskComment[]>(() => {
   if (!props.taskId) {
     return [];
@@ -175,7 +178,7 @@ watch(
       description: value.description ?? '',
       priority: value.priority,
       worktreeId: value.worktreeId ?? null,
-      dueDate: value.dueDate ?? null,
+      dueDate: value.dueDate ? dayjs(value.dueDate).format('YYYY-MM-DD') : null,
       tags: [...(value.tags ?? [])],
     };
     originalWorktreeId.value = value.worktreeId ?? null;
@@ -206,8 +209,8 @@ async function loadComments(taskId: string) {
   detailLoading.value = true;
   try {
     const response = await listComments.send(taskId);
-    const items = response?.body?.items ?? [];
-    taskStore.setComments(taskId, items as TaskComment[]);
+    const items = extractItems<TaskComment>(response);
+    taskStore.setComments(taskId, items);
   } catch (error: any) {
     message.error(error?.message ?? '加载评论失败');
   } finally {
@@ -229,11 +232,11 @@ async function handleSave() {
       dueDate: form.value.dueDate,
     };
     const response = await updateTask.send(task.value.id, payload);
-    let updated = response?.body?.item as Task | undefined;
+    let updated = extractItem<Task>(response);
 
     if (form.value.worktreeId !== originalWorktreeId.value) {
       const bindResponse = await bindWorktree.send(task.value.id, form.value.worktreeId);
-      updated = bindResponse?.body?.item as Task | undefined;
+      updated = extractItem<Task>(bindResponse);
     }
 
     if (updated) {
@@ -285,7 +288,7 @@ async function handleCreateComment() {
   commentLoading.value = true;
   try {
     const response = await createComment.send(task.value.id, newComment.value.trim());
-    const comment = response?.body?.item as TaskComment | undefined;
+    const comment = extractItem<TaskComment>(response);
     if (comment) {
       taskStore.appendComment(task.value.id, comment);
       newComment.value = '';
@@ -317,16 +320,6 @@ const formatDate = (value: string) => dayjs(value).format('YYYY-MM-DD HH:mm');
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.task-detail__preview {
-  margin-top: 8px;
-  padding: 8px;
-  border-radius: 4px;
-  background-color: var(--n-color);
-  border: 1px dashed var(--n-border-color);
-  max-height: 200px;
-  overflow: auto;
 }
 
 .task-detail__section-header {

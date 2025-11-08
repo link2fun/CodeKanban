@@ -1,12 +1,20 @@
 <template>
-  <n-card class="worktree-card" :class="{ 'is-main': worktree.isMain }" size="small">
+  <n-card
+    class="worktree-card"
+    :class="{ 'is-main': worktree.isMain, 'is-selected': selected }"
+    size="small"
+    @click="handleSelect"
+  >
     <template #header>
       <n-space justify="space-between" align="center">
-        <n-ellipsis style="max-width: 180px">
-          {{ worktree.branchName }}
-        </n-ellipsis>
+        <n-space align="center" size="small">
+          <n-ellipsis style="max-width: 160px">
+            {{ worktree.branchName }}
+          </n-ellipsis>
+          <n-tag v-if="worktree.isMain" size="small" round type="info">默认</n-tag>
+        </n-space>
         <n-dropdown :options="actions" @select="handleAction">
-          <n-button text size="small">
+          <n-button text size="small" @click.stop>
             <n-icon><EllipsisHorizontalOutline /></n-icon>
           </n-button>
         </n-dropdown>
@@ -40,6 +48,7 @@ dayjs.locale('zh-cn');
 
 const props = defineProps<{
   worktree: Worktree;
+  selected?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -47,6 +56,7 @@ const emit = defineEmits<{
   delete: [worktree: Worktree];
   'open-explorer': [path: string];
   'open-terminal': [path: string];
+  select: [id: string];
 }>();
 
 const actions = computed(() => [
@@ -81,6 +91,10 @@ function formatTime(time: string | null) {
   }
   return dayjs(time).fromNow();
 }
+
+function handleSelect() {
+  emit('select', props.worktree.id);
+}
 </script>
 
 <style scoped>
@@ -95,9 +109,11 @@ function formatTime(time: string | null) {
   transform: translateY(-1px);
 }
 
-.worktree-card.is-main {
+.worktree-card.is-selected {
   border-color: var(--n-color-primary);
+  box-shadow: 0 0 0 1px var(--n-color-primary);
 }
+
 
 .meta-text {
   font-size: 12px;

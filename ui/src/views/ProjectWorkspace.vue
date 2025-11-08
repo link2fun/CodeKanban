@@ -1,15 +1,35 @@
 <template>
   <div class="project-workspace">
     <n-layout has-sider>
-      <n-layout-sider bordered :width="320" :collapsed-width="0" show-trigger="arrow-circle">
-        <WorktreeList />
+      <!-- 左侧最近项目侧边栏 -->
+      <n-layout-sider
+        bordered
+        :width="240"
+        :min-width="200"
+        :max-width="400"
+        resizable
+      >
+        <RecentProjects :current-project-id="currentProjectId" />
       </n-layout-sider>
 
-      <n-layout-content>
-        <div class="workspace-content">
-          <KanbanBoard :project-id="currentProjectId" />
-        </div>
-      </n-layout-content>
+      <n-layout has-sider>
+        <!-- 右侧工作树侧边栏 -->
+        <n-layout-sider
+          bordered
+          :width="320"
+          :collapsed-width="0"
+          show-trigger="arrow-circle"
+        >
+          <WorktreeList />
+        </n-layout-sider>
+
+        <n-layout-content>
+          <!-- 主内容区 -->
+          <div class="workspace-content">
+            <KanbanBoard :project-id="currentProjectId" />
+          </div>
+        </n-layout-content>
+      </n-layout>
     </n-layout>
   </div>
 </template>
@@ -20,6 +40,7 @@ import { useRoute } from 'vue-router';
 import { useProjectStore } from '@/stores/project';
 import WorktreeList from '@/components/worktree/WorktreeList.vue';
 import KanbanBoard from '@/components/kanban/KanbanBoard.vue';
+import RecentProjects from '@/components/project/RecentProjects.vue';
 
 const route = useRoute();
 const projectStore = useProjectStore();
@@ -31,6 +52,7 @@ const loadProject = (id: string) => {
     return;
   }
   projectStore.fetchProject(id);
+  projectStore.addRecentProject(id);
 };
 
 onMounted(() => {
@@ -56,5 +78,7 @@ watch(
 
 .workspace-content {
   padding: 24px;
+  height: 100vh;
+  overflow-y: auto;
 }
 </style>

@@ -39,13 +39,13 @@ type updateTaskBody struct {
 }
 
 type moveTaskBody struct {
-	Status     string   `json:"status" doc:"新状态"`
-	OrderIndex *float64 `json:"orderIndex" doc:"排序索引"`
-	WorktreeID *string  `json:"worktreeId" doc:"关联 Worktree"`
+	Status     string   `json:"status,omitempty" doc:"新状态"`
+	OrderIndex *float64 `json:"orderIndex,omitempty" doc:"排序索引"`
+	WorktreeID *string  `json:"worktreeId,omitempty" doc:"关联 Worktree"`
 }
 
 type bindWorktreeBody struct {
-	WorktreeID *string `json:"worktreeId" doc:"Worktree ID（null 表示解绑）"`
+	WorktreeID *string `json:"worktreeId,omitempty" doc:"Worktree ID（null 表示解绑）"`
 }
 
 type createCommentBody struct {

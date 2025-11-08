@@ -7,6 +7,7 @@ import type {
   RespondedAlovaGenerics,
 } from 'alova';
 import { alovaInstance } from './index';
+import { unwrapBody } from './response';
 
 type CurrentAG = typeof alovaInstance extends Alova<infer AG> ? AG : AlovaGenerics;
 type HttpMethod<Responded, Transformed> = Method<
@@ -62,13 +63,6 @@ const normalizePath = (path: string) => {
     return ensured;
   }
   return `${API_PREFIX}${ensured}`;
-};
-
-const unwrapBody = (value: unknown) => {
-  if (value && typeof value === 'object' && 'body' in (value as Record<string, unknown>)) {
-    return (value as Record<string, unknown>).body;
-  }
-  return value;
 };
 
 const enhanceConfig = <Responded, Transformed>(
