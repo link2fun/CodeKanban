@@ -54,8 +54,8 @@
 ### 后端能力
 
 - `GET /api/v1/projects/{projectId}/branches`：返回本地 / 远程分支列表，自动标记本地 Worktree 绑定。
-- `POST /api/v1/projects/{projectId}/branches`：校验分支命名并创建分支，可选同步创建 Worktree。
-- `DELETE /api/v1/projects/{projectId}/branches/{branchName}`：支持 `force` 查询参数，删除前会阻止默认分支和当前检出的分支。
+- `POST /api/v1/projects/{projectId}/branches/create`：校验分支命名并创建分支，可选同步创建 Worktree。
+- `POST /api/v1/projects/{projectId}/branches/{branchName}`：支持 `force` 查询参数，删除前会阻止默认分支和当前检出的分支。
 - `POST /api/v1/worktrees/{id}/merge`：在指定 Worktree 内执行 merge/rebase/squash，返回冲突文件清单；落盘 Prometheus 指标与结构化日志。
 
 ### 前端入口

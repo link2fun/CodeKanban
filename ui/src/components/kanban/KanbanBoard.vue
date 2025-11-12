@@ -31,7 +31,7 @@
             clearable
             :consistent-menu-width="false"
           />
-          <n-button type="primary" :disabled="!projectId" @click="showCreateDialog = true">
+          <n-button type="primary" :disabled="!projectId" @click="openCreateDialog('todo')">
             <template #icon>
               <n-icon><AddOutline /></n-icon>
             </template>
@@ -51,11 +51,15 @@
             :title="column.title"
             :status="column.key"
             :tasks="filteredTasksByStatus[column.key] ?? []"
+            :show-add-button="projectId ? column.allowQuickAdd : false"
+            :add-disabled="!projectId"
             @task-moved="handleTaskMoved"
             @task-clicked="handleTaskClicked"
             @task-edit="handleTaskEdit"
             @task-delete="handleTaskDeleteRequest"
             @task-copy="handleTaskCopy"
+            @task-start-work="handleTaskStartWork"
+            @add-click="handleColumnQuickAdd(column.key)"
           />
         </div>
       </n-spin>
@@ -65,6 +69,7 @@
       v-if="projectId"
       v-model:show="showCreateDialog"
       :project-id="projectId"
+      :default-status="createTargetStatus"
       @created="handleTaskCreated"
     />
 
@@ -78,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, inject, ref, watch, type Ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useClipboard } from '@vueuse/core';
 import { useDialog, useMessage } from 'naive-ui';
@@ -91,6 +96,7 @@ import { useTaskActions } from '@/composables/useTaskActions';
 import { useProjectStore } from '@/stores/project';
 import { extractItems, extractItem } from '@/api/response';
 import type { Task } from '@/types/models';
+import type TerminalPanel from '@/components/terminal/TerminalPanel.vue';
 
 const props = defineProps<{
   projectId?: string;
@@ -103,19 +109,30 @@ const dialog = useDialog();
 const { copy: copyTaskTitle, isSupported: clipboardSupported } = useClipboard();
 const { listTasks, moveTask, deleteTask } = useTaskActions();
 
+// 注入终端面板引用
+const terminalPanelRef = inject<Ref<InstanceType<typeof TerminalPanel> | null>>('terminalPanelRef');
+
 const showCreateDialog = ref(false);
 const showDetailDrawer = ref(false);
 const boardLoading = ref(false);
 const deletingTaskId = ref<string | null>(null);
 
-const columns = [
-  { key: 'todo', title: '待办' },
-  { key: 'in_progress', title: '进行中' },
+type ColumnConfig = {
+  key: Task['status'];
+  title: string;
+  allowQuickAdd?: boolean;
+};
+
+const columns: ColumnConfig[] = [
+  { key: 'todo', title: '待办', allowQuickAdd: true },
+  { key: 'in_progress', title: '进行中', allowQuickAdd: true },
   { key: 'done', title: '已完成' },
-] as const;
+];
 
 const currentProjectId = computed(() => props.projectId ?? '');
 const currentProjectName = computed(() => projectStore.currentProject?.name ?? '未命名项目');
+
+const createTargetStatus = ref<Task['status']>('todo');
 
 const ALL_WORKTREES_OPTION = '__all__';
 
@@ -216,6 +233,18 @@ function handleTaskEdit(task: Task) {
   handleTaskClicked(task);
 }
 
+function openCreateDialog(status: Task['status'] = 'todo') {
+  createTargetStatus.value = status;
+  showCreateDialog.value = true;
+}
+
+function handleColumnQuickAdd(status: Task['status']) {
+  if (!props.projectId) {
+    return;
+  }
+  openCreateDialog(status);
+}
+
 function handleTaskDeleteRequest(task: Task) {
   dialog.warning({
     title: '删除任务',
@@ -257,6 +286,48 @@ async function handleTaskCopy(task: Task) {
 function handleTaskCreated(task: Task) {
   taskStore.upsertTask(task);
 }
+
+async function handleTaskStartWork(task: Task) {
+  try {
+    // 确定要使用的worktree
+    let targetWorktreeId = task.worktreeId;
+    let targetWorktree = targetWorktreeId
+      ? projectStore.worktrees.find(w => w.id === targetWorktreeId)
+      : null;
+
+    // 如果任务没有关联分支，或者关联的分支不存在，使用主分支
+    if (!targetWorktree) {
+      targetWorktree = projectStore.worktrees.find(w => w.isMain);
+      if (!targetWorktree) {
+        message.error('未找到可用的工作区分支');
+        return;
+      }
+      targetWorktreeId = targetWorktree.id;
+    }
+
+    // 使用终端面板创建终端会话（会自动展开终端面板）
+    if (terminalPanelRef?.value) {
+      terminalPanelRef.value.createTerminal({
+        worktreeId: targetWorktreeId!,
+        title: task.title,
+        workingDir: targetWorktree.path,
+      });
+    }
+
+    // 更新任务状态为"进行中"
+    if (task.status !== 'in_progress') {
+      const response = await moveTask.send(task.id, { status: 'in_progress' });
+      const updated = extractItem(response) as unknown as Task | undefined;
+      if (updated) {
+        taskStore.upsertTask(updated);
+      }
+    }
+
+    message.success('已创建终端并更新任务状态');
+  } catch (error: any) {
+    message.error(error?.message ?? '开始工作失败');
+  }
+}
 </script>
 
 <style scoped>
@@ -286,18 +357,29 @@ function handleTaskCreated(task: Task) {
   flex: 1;
   padding: 16px;
   overflow: hidden;
+  min-height: 0;
 }
 
 .board-columns {
   display: grid;
   grid-template-columns: repeat(3, minmax(280px, 1fr));
+  grid-template-rows: 100%;
   gap: 16px;
-  height: 100%;
+  height: calc(100vh - 160px);
+  max-height: 100%;
+  overflow: hidden;
 }
 
 @media (max-width: 1200px) {
+  .board-body {
+    overflow-y: auto;
+  }
+
   .board-columns {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-rows: auto;
+    height: auto;
+    min-height: 100%;
   }
 }
 </style>

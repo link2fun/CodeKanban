@@ -61,11 +61,14 @@
           :can-merge="canMergeWorktree(worktree)"
           :can-commit="canCommitWorktree(worktree)"
           :is-deleting="deletingWorktreeId === worktree.id"
+          :default-editor="defaultEditorPreference"
+          :editor-options="worktreeEditorOptions"
           @select="handleSelectWorktree"
           @refresh="handleRefresh"
           @delete="confirmDelete"
           @open-explorer="handleOpenExplorer"
           @open-terminal="handleOpenTerminal"
+          @open-editor="handleOpenEditor"
           @sync-default="openSyncDialog"
           @merge-to-default="openMergeDialog"
           @commit-worktree="openCommitDialog"
@@ -169,16 +172,20 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import { useDialog, useMessage } from 'naive-ui';
 import { AddOutline, GitBranchOutline, RefreshOutline } from '@vicons/ionicons5';
 import WorktreeCard from './WorktreeCard.vue';
 import WorktreeCreateDialog from './WorktreeCreateDialog.vue';
 import { useProjectStore } from '@/stores/project';
+import { useSettingsStore } from '@/stores/settings';
 import Apis from '@/api';
 import { useReq } from '@/api/composable';
 import { extractItem } from '@/api/response';
 import type { BranchListResult, MergeResult, Worktree } from '@/types/models';
+import type { EditorPreference } from '@/stores/settings';
+import { DEFAULT_EDITOR, EDITOR_OPTIONS, EDITOR_LABEL_MAP } from '@/constants/editor';
 
 const emit = defineEmits<{
   'open-terminal': [payload: Worktree];
@@ -188,6 +195,19 @@ const projectStore = useProjectStore();
 const router = useRouter();
 const message = useMessage();
 const dialog = useDialog();
+const settingsStore = useSettingsStore();
+const { editorSettings } = storeToRefs(settingsStore);
+
+const defaultEditorPreference = computed<EditorPreference>(
+  () => editorSettings.value.defaultEditor ?? DEFAULT_EDITOR,
+);
+const customEditorCommand = computed(() => editorSettings.value.customCommand?.trim() ?? '');
+const worktreeEditorOptions = computed(() =>
+  EDITOR_OPTIONS.map(option => ({
+    ...option,
+    disabled: option.value === 'custom' && !customEditorCommand.value,
+  })),
+);
 
 const showCreateDialog = ref(false);
 
@@ -480,6 +500,28 @@ async function handleOpenExplorer(path: string) {
 
 function handleOpenTerminal(worktree: Worktree) {
   emit('open-terminal', worktree);
+}
+
+async function handleOpenEditor(payload: { worktree: Worktree; editor: EditorPreference }) {
+  const { worktree, editor } = payload;
+  if (!worktree) {
+    return;
+  }
+  if (editor === 'custom' && !customEditorCommand.value) {
+    message.warning('请先在设置中配置自定义命令');
+    return;
+  }
+  try {
+    await projectStore.openInEditor(
+      worktree.path,
+      editor,
+      editor === 'custom' ? customEditorCommand.value : undefined,
+    );
+    const label = EDITOR_LABEL_MAP[editor] ?? '编辑器';
+    message.success(`已在 ${label} 中打开`);
+  } catch (error: any) {
+    message.error(error?.message ?? '打开编辑器失败', { duration: 0 });
+  }
 }
 
 async function handleWorktreeCreated(worktree?: Worktree) {

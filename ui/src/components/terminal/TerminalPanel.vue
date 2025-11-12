@@ -1,5 +1,11 @@
 <template>
-  <div v-if="tabs.length && expanded" class="terminal-panel" :style="panelStyle">
+  <div
+    v-if="tabs.length"
+    v-show="expanded"
+    class="terminal-panel"
+    :style="panelStyle"
+    @pointerdown.capture="handlePanelPointerDown"
+  >
     <!-- 拖动调整高度的手柄 -->
     <div class="resize-handle resize-handle-top" @mousedown="startResize">
       <div class="resize-indicator"></div>
@@ -83,6 +89,7 @@
         :tab="tab"
         :emitter="emitter"
         :send="send"
+        :should-auto-focus="shouldAutoFocusTerminal"
       />
     </div>
   </div>
@@ -90,6 +97,8 @@
     v-if="tabs.length && !expanded"
     type="button"
     class="terminal-floating-button"
+    :style="{ zIndex: floatingButtonZIndex }"
+    @pointerdown="handleFloatingButtonPointerDown"
     @click="toggleExpanded"
   >
     <span class="floating-button-label">展开</span>
@@ -100,14 +109,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, nextTick, ref, toRef, watch } from 'vue';
+import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toRef, watch } from 'vue';
 import type { HTMLAttributes } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useDialog, useMessage, NIcon, NInput } from 'naive-ui';
-import { useDebounceFn, useResizeObserver, useStorage } from '@vueuse/core';
+import { useDebounceFn, useEventListener, useResizeObserver, useStorage } from '@vueuse/core';
 import { ChevronDownOutline, ChevronUpOutline, TerminalOutline, CopyOutline, CreateOutline, SettingsOutline, CheckmarkOutline } from '@vicons/ionicons5';
 import TerminalViewport from './TerminalViewport.vue';
 import { useTerminalClient, type TerminalCreateOptions, type TerminalTabState } from '@/composables/useTerminalClient';
 import type { DropdownOption } from 'naive-ui';
+import { useSettingsStore } from '@/stores/settings';
+import Sortable, { type SortableEvent } from 'sortablejs';
+import { usePanelStack } from '@/composables/usePanelStack';
 
 const props = defineProps<{
   projectId: string;
@@ -122,6 +135,7 @@ const panelLeft = useStorage('terminal-panel-left', 12);
 const panelRight = useStorage('terminal-panel-right', 12);
 const autoResize = useStorage('terminal-auto-resize', true);
 const isResizing = ref(false);
+const shouldAutoFocusTerminal = ref(true);
 
 // 右键菜单相关状态
 const contextMenuTab = ref<string | null>(null);
@@ -148,6 +162,11 @@ const settingsMenuOptions = computed<DropdownOption[]>(() => [
     key: 'auto-resize',
     icon: autoResize.value ? () => h(NIcon, null, { default: () => h(CheckmarkOutline) }) : undefined,
   },
+  {
+    label: '关闭终端时需要确认',
+    key: 'confirm-close',
+    icon: confirmBeforeTerminalClose.value ? () => h(NIcon, null, { default: () => h(CheckmarkOutline) }) : undefined,
+  },
 ]);
 
 const MIN_HEIGHT = 200;
@@ -160,6 +179,10 @@ const TAB_LABEL_EXTRA_SPACE = 40;
 const TABS_CONTAINER_STATIC_OFFSET = 320;
 const TABS_CONTAINER_MIN_OFFSET = 200;
 const SHARED_WIDTH_HIDE_THRESHOLD = 1000;
+const FLOATING_BUTTON_Z_OFFSET = 10;
+
+const { zIndex: terminalPanelZIndex, bringToFront: bringTerminalPanelToFront } = usePanelStack('terminal-panel');
+const floatingButtonZIndex = computed(() => terminalPanelZIndex.value + FLOATING_BUTTON_Z_OFFSET);
 
 const {
   tabs,
@@ -171,8 +194,17 @@ const {
   closeSession,
   send,
   disconnectTab,
+  reorderTabs: reorderTabsInStore,
 } =
   useTerminalClient(projectIdRef);
+
+const settingsStore = useSettingsStore();
+const { maxTerminalsPerProject, terminalShortcut, confirmBeforeTerminalClose } = storeToRefs(settingsStore);
+const terminalLimit = computed(() => Math.max(maxTerminalsPerProject.value || 1, 1));
+const isTerminalLimitReached = computed(() => tabs.value.length >= terminalLimit.value);
+const toggleShortcutCode = computed(() => terminalShortcut.value.code);
+const toggleShortcutText = computed(() => terminalShortcut.value.display || terminalShortcut.value.code);
+const toggleShortcutLabel = computed(() => `快捷键：${toggleShortcutText.value}`);
 
 const tabsContainerRef = ref<HTMLElement | null>(null);
 const tabsContainerWidth = ref(0);
@@ -181,6 +213,15 @@ const hideStatusDots = ref(false);
 const tabTitleStyle = computed(() => ({
   maxWidth: `${tabTitleMaxWidth.value}px`,
 }));
+const tabDragSortable = shallowRef<Sortable | null>(null);
+const refreshTabSortable = useDebounceFn(
+  () => {
+    nextTick(() => {
+      setupTabSorting();
+    });
+  },
+  100,
+);
 
 const activeId = computed({
   get: () => activeTabId.value,
@@ -193,6 +234,7 @@ const panelStyle = computed(() => ({
   height: expanded.value ? `${panelHeight.value}px` : 'auto',
   left: `${panelLeft.value}px`,
   right: `${panelRight.value}px`,
+  zIndex: terminalPanelZIndex.value,
 }));
 
 function recalcTabTitleWidth(explicitWidth?: number) {
@@ -233,6 +275,7 @@ watch(
     nextTick(() => {
       recalcTabTitleWidth();
     });
+    refreshTabSortable();
   },
 );
 
@@ -243,6 +286,20 @@ watch(
       nextTick(() => {
         recalcTabTitleWidth();
       });
+      refreshTabSortable();
+    } else {
+      destroyTabSorting();
+    }
+  },
+);
+
+watch(
+  () => tabsContainerRef.value,
+  element => {
+    if (element) {
+      refreshTabSortable();
+    } else {
+      destroyTabSorting();
     }
   },
 );
@@ -250,6 +307,76 @@ watch(
 nextTick(() => {
   recalcTabTitleWidth();
 });
+
+onMounted(() => {
+  refreshTabSortable();
+});
+
+onBeforeUnmount(() => {
+  destroyTabSorting();
+});
+
+if (typeof window !== 'undefined') {
+  useEventListener(window, 'keydown', handleTerminalToggleShortcut);
+}
+
+function setupTabSorting() {
+  const container = tabsContainerRef.value;
+  if (!container || tabs.value.length <= 1) {
+    destroyTabSorting();
+    return;
+  }
+  const wrapper = container.querySelector('.n-tabs-wrapper') as HTMLElement | null;
+  if (!wrapper) {
+    destroyTabSorting();
+    return;
+  }
+  if (tabDragSortable.value) {
+    if (tabDragSortable.value.el === wrapper) {
+      tabDragSortable.value.option('disabled', tabs.value.length <= 1);
+      return;
+    }
+    destroyTabSorting();
+  }
+  tabDragSortable.value = Sortable.create(wrapper, {
+    animation: 150,
+    direction: 'horizontal',
+    draggable: '.n-tabs-tab-wrapper',
+    handle: '.n-tabs-tab',
+    filter: '.n-tabs-tab__close',
+    preventOnFilter: false,
+    ghostClass: 'terminal-tab-ghost',
+    chosenClass: 'terminal-tab-chosen',
+    dragClass: 'terminal-tab-dragging',
+    onEnd: handleTabDragEnd,
+  });
+  tabDragSortable.value.option('disabled', tabs.value.length <= 1);
+}
+
+function destroyTabSorting() {
+  if (tabDragSortable.value) {
+    tabDragSortable.value.destroy();
+    tabDragSortable.value = null;
+  }
+}
+
+function handleTabDragEnd(event: SortableEvent) {
+  const fromIndex = event.oldDraggableIndex ?? event.oldIndex ?? -1;
+  const toIndex = event.newDraggableIndex ?? event.newIndex ?? -1;
+  if (
+    fromIndex === -1 ||
+    toIndex === -1 ||
+    fromIndex === toIndex ||
+    fromIndex >= tabs.value.length ||
+    toIndex >= tabs.value.length
+  ) {
+    return;
+  }
+  reorderTabsInStore(fromIndex, toIndex);
+  nextTick(() => {
+    scheduleResizeAll();
+  });
+}
 
 // 节流的终端 resize 函数
 const scheduleResizeAll = useDebounceFn(
@@ -300,7 +427,31 @@ watch(
   { flush: 'post' },
 );
 
-function toggleExpanded() {
+type ToggleOptions = {
+  skipFocus?: boolean;
+};
+
+function isToggleOptions(value: unknown): value is ToggleOptions {
+  return Boolean(value && typeof value === 'object' && 'skipFocus' in value);
+}
+
+function handlePanelPointerDown() {
+  bringTerminalPanelToFront();
+}
+
+function handleFloatingButtonPointerDown() {
+  bringTerminalPanelToFront();
+}
+
+function toggleExpanded(arg?: ToggleOptions | MouseEvent) {
+  const options = isToggleOptions(arg) ? arg : undefined;
+  const willExpand = !expanded.value;
+  if (willExpand) {
+    bringTerminalPanelToFront();
+    shouldAutoFocusTerminal.value = !options?.skipFocus;
+  } else {
+    emitter.emit('terminal-blur-all');
+  }
   expanded.value = !expanded.value;
   // 展开时触发 resize，确保终端尺寸正确
   if (expanded.value) {
@@ -308,6 +459,50 @@ function toggleExpanded() {
       scheduleResizeAll();
     });
   }
+}
+
+function handleTerminalToggleShortcut(event: KeyboardEvent) {
+  if (!tabs.value.length || event.defaultPrevented) {
+    return;
+  }
+  if (event.repeat || !isToggleShortcut(event)) {
+    return;
+  }
+  const activeElement = (typeof document !== 'undefined' ? document.activeElement : null) as HTMLElement | null;
+  if (isTerminalElement(activeElement) || isEditableElement(activeElement)) {
+    return;
+  }
+  event.preventDefault();
+  toggleExpanded({ skipFocus: true });
+}
+
+function isToggleShortcut(event: KeyboardEvent) {
+  if (event.metaKey || event.ctrlKey || event.altKey) {
+    return false;
+  }
+  return event.code === toggleShortcutCode.value;
+}
+
+function isTerminalElement(element: HTMLElement | null) {
+  if (!element) {
+    return false;
+  }
+  return Boolean(element.closest('.terminal-shell'));
+}
+
+function isEditableElement(element: HTMLElement | null) {
+  if (!element) {
+    return false;
+  }
+  if (element.isContentEditable) {
+    return true;
+  }
+  const tagName = element.tagName;
+  if (tagName === 'INPUT' || tagName === 'TEXTAREA') {
+    const input = element as HTMLInputElement | HTMLTextAreaElement;
+    return !input.readOnly && !input.disabled;
+  }
+  return false;
 }
 
 function startResize(event: MouseEvent) {
@@ -430,6 +625,10 @@ async function openTerminal(options: TerminalCreateOptions) {
     message.warning('请先选择项目');
     return;
   }
+  if (!ensureTerminalCapacity()) {
+    return;
+  }
+  shouldAutoFocusTerminal.value = true;
   expanded.value = true;
   try {
     await createSession(options);
@@ -444,6 +643,26 @@ async function openTerminal(options: TerminalCreateOptions) {
 }
 
 async function handleClose(sessionId: string) {
+  // 如果开启了关闭确认，先弹出确认对话框
+  if (confirmBeforeTerminalClose.value) {
+    const tab = tabs.value.find(t => t.id === sessionId);
+    const tabTitle = tab?.title || '终端';
+
+    dialog.warning({
+      title: '确认关闭终端',
+      content: `确定要关闭"${tabTitle}"吗？`,
+      positiveText: '确认关闭',
+      negativeText: '取消',
+      onPositiveClick: async () => {
+        await performClose(sessionId);
+      },
+    });
+  } else {
+    await performClose(sessionId);
+  }
+}
+
+async function performClose(sessionId: string) {
   try {
     await closeSession(sessionId);
     message.success('终端已关闭');
@@ -486,6 +705,9 @@ async function handleContextMenuSelect(key: string) {
 
 async function duplicateTab(tab: TerminalTabState) {
   const title = buildDuplicateTitle(tab.title);
+  if (!ensureTerminalCapacity()) {
+    return;
+  }
   try {
     await createSession({
       worktreeId: tab.worktreeId,
@@ -498,6 +720,14 @@ async function duplicateTab(tab: TerminalTabState) {
   } catch (error: any) {
     message.error(error?.message ?? '复制失败');
   }
+}
+
+function ensureTerminalCapacity() {
+  if (isTerminalLimitReached.value) {
+    message.warning('当前项目终端数量已达上限（' + terminalLimit.value + '），可在全局设置中调整。');
+    return false;
+  }
+  return true;
 }
 
 function promptRenameTab(tab: TerminalTabState) {
@@ -558,6 +788,8 @@ function handleSettingsMenuSelect(key: string) {
   showSettingsMenu.value = false;
   if (key === 'auto-resize') {
     autoResize.value = !autoResize.value;
+  } else if (key === 'confirm-close') {
+    settingsStore.updateConfirmBeforeTerminalClose(!confirmBeforeTerminalClose.value);
   }
 }
 
@@ -577,7 +809,6 @@ defineExpose({
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
-  z-index: 1000;
   transition: height 0.2s ease;
   overflow: hidden;
 }
@@ -664,6 +895,15 @@ defineExpose({
   width: 100%;
 }
 
+.tabs-container :deep(.n-tabs-tab) {
+  cursor: grab;
+  user-select: none;
+}
+
+.tabs-container :deep(.n-tabs-tab:active) {
+  cursor: grabbing;
+}
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -718,6 +958,18 @@ defineExpose({
   box-shadow: 0 0 0 1px rgba(240, 68, 56, 0.25);
 }
 
+:global(.terminal-tab-ghost) {
+  opacity: 0.4;
+}
+
+:global(.terminal-tab-chosen .n-tabs-tab) {
+  box-shadow: 0 0 0 1px var(--n-color-primary);
+}
+
+:global(.terminal-tab-dragging .n-tabs-tab) {
+  cursor: grabbing !important;
+}
+
 .terminal-floating-button {
   position: fixed;
   bottom: 16px;
@@ -725,16 +977,15 @@ defineExpose({
   min-height: 42px;
   padding: 0 16px;
   border-radius: 21px;
-  border: 1px solid var(--n-border-color, rgba(0, 0, 0, 0.12));
-  background-color: #fff;
-  color: var(--n-text-color, #222);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: #1a1a1a;
+  color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
   cursor: pointer;
-  z-index: 1000;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
   font-size: 13px;
   font-weight: 600;

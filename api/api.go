@@ -40,7 +40,7 @@ func Init(ctx context.Context, cfg *utils.AppConfig, assets embed.FS) error {
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.CorsAllowOrigins,
-		AllowMethods:     "GET,POST,PUT,DELETE,PATCH",
+		AllowMethods:     "GET,POST",
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
 		AllowCredentials: cfg.CorsAllowOrigins != "*",
 	}))

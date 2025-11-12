@@ -38,6 +38,111 @@
         </n-form>
       </n-card>
 
+
+      <n-card title="项目与终端" size="huge">
+        <n-form label-placement="left" label-width="160">
+          <n-form-item label="最近项目数量">
+            <n-space vertical size="small">
+              <n-input-number v-model:value="recentProjectsLimitValue" :min="1" :max="20" :step="1" />
+              <span class="form-tip">控制“最近项目”列表展示的数量</span>
+            </n-space>
+          </n-form-item>
+          <n-form-item label="单项目终端上限">
+            <n-space vertical size="small">
+              <n-input-number v-model:value="terminalLimitValue" :min="1" :max="24" :step="1" />
+              <span class="form-tip">限制每个项目可同时打开的终端标签数</span>
+            </n-space>
+          </n-form-item>
+          <n-form-item label="终端关闭确认">
+            <n-space vertical size="small">
+              <n-switch v-model:value="confirmTerminalCloseValue" />
+              <span class="form-tip">关闭终端前弹窗确认，避免误操作</span>
+            </n-space>
+          </n-form-item>
+          <n-form-item label="终端快捷键">
+            <n-space vertical size="small">
+              <n-input
+                :value="terminalShortcutValue"
+                readonly
+                :status="getShortcutStatus('terminal')"
+                placeholder="按“记录新按键”后按下目标按键"
+              >
+                <template #suffix>
+                  <span class="shortcut-hint">
+                    {{ getShortcutHint('terminal') }}
+                  </span>
+                </template>
+              </n-input>
+              <n-space>
+                <n-button size="small" @click="handleStartShortcutCapture('terminal')">
+                  {{ isCapturing('terminal') ? '正在记录...' : '记录新按键' }}
+                </n-button>
+                <n-button
+                  size="small"
+                  text
+                  :disabled="isTerminalShortcutDefault"
+                  @click="handleResetShortcut('terminal')"
+                >
+                  恢复默认
+                </n-button>
+              </n-space>
+              <span class="form-tip">用于展开/收起底部终端面板，默认 `</span>
+            </n-space>
+          </n-form-item>
+          <n-form-item label="记事板快捷键">
+            <n-space vertical size="small">
+              <n-input
+                :value="notepadShortcutValue"
+                readonly
+                :status="getShortcutStatus('notepad')"
+                placeholder="按“记录新按键”后按下目标按键"
+              >
+                <template #suffix>
+                  <span class="shortcut-hint">
+                    {{ getShortcutHint('notepad') }}
+                  </span>
+                </template>
+              </n-input>
+              <n-space>
+                <n-button size="small" @click="handleStartShortcutCapture('notepad')">
+                  {{ isCapturing('notepad') ? '正在记录...' : '记录新按键' }}
+                </n-button>
+                <n-button
+                  size="small"
+                  text
+                  :disabled="isNotepadShortcutDefault"
+                  @click="handleResetShortcut('notepad')"
+                >
+                  恢复默认
+                </n-button>
+              </n-space>
+              <span class="form-tip">用于展开/收起右侧记事板，默认 1</span>
+            </n-space>
+          </n-form-item>
+          <n-form-item label="默认编辑器">
+            <n-space vertical size="small">
+              <n-select
+                v-model:value="defaultEditorValue"
+                :options="editorOptions"
+                style="max-width: 240px"
+              />
+              <span class="form-tip">用于 Worktree 卡片的“打开编辑器”操作</span>
+            </n-space>
+          </n-form-item>
+          <n-form-item v-if="showCustomEditorInput" label="自定义命令">
+            <n-space vertical size="small">
+              <n-input
+                v-model:value="customEditorCommandValue"
+                :placeholder="customCommandPlaceholder"
+              />
+              <span class="form-tip">
+                使用 <code>{{ '{' }}{{ '{' }}path{{ '}' }}{{ '}' }}</code> 表示 Worktree 路径；若未包含占位符会在命令末尾追加路径。
+              </span>
+            </n-space>
+          </n-form-item>
+        </n-form>
+      </n-card>
+
       <n-card title="实时预览" size="huge">
         <div class="preview-panel" :style="{ backgroundColor: surfaceColor }">
           <div class="preview-banner" :style="{ backgroundColor: primaryColor }">
@@ -64,23 +169,43 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
-import { useTitle } from '@vueuse/core';
+import { useTitle, useEventListener } from '@vueuse/core';
+import { useMessage } from 'naive-ui';
 import { ColorPaletteOutline, SettingsOutline, RefreshOutline } from '@vicons/ionicons5';
-import { useSettingsStore } from '@/stores/settings';
+import {
+  useSettingsStore,
+  DEFAULT_TERMINAL_SHORTCUT,
+  DEFAULT_NOTEPAD_SHORTCUT,
+  type PanelShortcutSetting,
+  type EditorPreference,
+} from '@/stores/settings';
 import { APP_NAME } from '@/constants/app';
+import { DEFAULT_EDITOR, EDITOR_OPTIONS, isEditorPreference } from '@/constants/editor';
+
+type ShortcutTarget = 'terminal' | 'notepad';
 
 useTitle(`总设置 - ${APP_NAME}`);
 
 const router = useRouter();
+const message = useMessage();
 const settingsStore = useSettingsStore();
-const { theme } = storeToRefs(settingsStore);
+const {
+  theme,
+  recentProjectsLimit,
+  maxTerminalsPerProject,
+  terminalShortcut,
+  notepadShortcut,
+  editorSettings,
+  confirmBeforeTerminalClose,
+} = storeToRefs(settingsStore);
+const capturingTarget = ref<ShortcutTarget | null>(null);
 
 const primaryColor = computed({
   get: () => theme.value.primaryColor,
-  set: value => settingsStore.updateTheme({ primaryColor: value || '#18a058' }),
+  set: value => settingsStore.updateTheme({ primaryColor: value || '#3B69A9' }),
 });
 
 const bodyColor = computed({
@@ -93,12 +218,142 @@ const surfaceColor = computed({
   set: value => settingsStore.updateTheme({ surfaceColor: value || '#ffffff' }),
 });
 
+const editorOptions = EDITOR_OPTIONS;
+const customCommandPlaceholder = '例如：code --reuse-window {{path}}';
+
+const defaultEditorValue = computed<EditorPreference>({
+  get: () => editorSettings.value.defaultEditor,
+  set: (value: EditorPreference | null) => {
+    const normalized = value && isEditorPreference(value) ? value : DEFAULT_EDITOR;
+    settingsStore.updateEditorSettings({ defaultEditor: normalized });
+  },
+});
+
+const customEditorCommandValue = computed({
+  get: () => editorSettings.value.customCommand,
+  set: value => settingsStore.updateEditorSettings({ customCommand: value ?? '' }),
+});
+
+const showCustomEditorInput = computed(() => defaultEditorValue.value === 'custom');
+
+const recentProjectsLimitValue = computed({
+  get: () => recentProjectsLimit.value,
+  set: value => settingsStore.updateRecentProjectsLimit(value ?? 10),
+});
+
+const terminalLimitValue = computed({
+  get: () => maxTerminalsPerProject.value,
+  set: value => settingsStore.updateMaxTerminalsPerProject(value ?? 12),
+});
+
+const confirmTerminalCloseValue = computed({
+  get: () => confirmBeforeTerminalClose.value,
+  set: value => settingsStore.updateConfirmBeforeTerminalClose(value),
+});
+
+const terminalShortcutValue = computed(
+  () => terminalShortcut.value.display || terminalShortcut.value.code,
+);
+const notepadShortcutValue = computed(() => notepadShortcut.value.display || notepadShortcut.value.code);
+const isTerminalShortcutDefault = computed(
+  () => terminalShortcut.value.code === DEFAULT_TERMINAL_SHORTCUT.code,
+);
+const isNotepadShortcutDefault = computed(() => notepadShortcut.value.code === DEFAULT_NOTEPAD_SHORTCUT.code);
+
 function handleBack() {
   router.back();
 }
 
 function handleResetTheme() {
   settingsStore.resetTheme();
+}
+
+function handleStartShortcutCapture(target: ShortcutTarget) {
+  if (capturingTarget.value === target) {
+    return;
+  }
+  capturingTarget.value = target;
+  message.info(`请按下新的${targetLabel(target)}快捷键（Esc 取消）`);
+}
+
+function handleResetShortcut(target: ShortcutTarget) {
+  if (target === 'terminal') {
+    settingsStore.resetTerminalShortcut();
+  } else {
+    settingsStore.resetNotepadShortcut();
+  }
+}
+
+function isCapturing(target: ShortcutTarget) {
+  return capturingTarget.value === target;
+}
+
+function getShortcutStatus(target: ShortcutTarget) {
+  return isCapturing(target) ? 'warning' : undefined;
+}
+
+function getShortcutHint(target: ShortcutTarget) {
+  return isCapturing(target) ? '等待输入… (Esc 取消)' : '单键、无 Ctrl/Alt';
+}
+
+function targetLabel(target: ShortcutTarget) {
+  return target === 'terminal' ? '终端' : '记事板';
+}
+
+if (typeof window !== 'undefined') {
+  useEventListener(window, 'keydown', event => {
+    if (!capturingTarget.value) {
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      capturingTarget.value = null;
+      return;
+    }
+    event.preventDefault();
+    const shortcut = normalizeShortcutEvent(event);
+    if (!shortcut) {
+      message.warning('暂不支持该按键，请选择其他按键');
+      return;
+    }
+    if (capturingTarget.value === 'terminal') {
+      settingsStore.updateTerminalShortcut(shortcut);
+    } else {
+      settingsStore.updateNotepadShortcut(shortcut);
+    }
+    const target = capturingTarget.value;
+    capturingTarget.value = null;
+    message.success(`${targetLabel(target!)}快捷键已更新为 ${shortcut.display}`);
+  });
+}
+
+function normalizeShortcutEvent(event: KeyboardEvent): PanelShortcutSetting | null {
+  if (event.metaKey || event.ctrlKey || event.altKey) {
+    return null;
+  }
+  const disallowedKeys = new Set(['Shift', 'CapsLock', 'Tab', 'Enter']);
+  if (disallowedKeys.has(event.key)) {
+    return null;
+  }
+  const code = event.code?.trim();
+  if (!code) {
+    return null;
+  }
+  const display = formatShortcutLabel(event);
+  return {
+    code,
+    display,
+  };
+}
+
+function formatShortcutLabel(event: KeyboardEvent) {
+  if (event.key === ' ') {
+    return 'Space';
+  }
+  if (event.key && event.key.length === 1) {
+    return event.key;
+  }
+  return event.code;
 }
 </script>
 
@@ -125,5 +380,15 @@ function handleResetTheme() {
 .preview-content {
   padding: 24px;
   background-color: rgba(255, 255, 255, 0.8);
+}
+
+.form-tip {
+  font-size: 12px;
+  color: var(--n-text-color-3, #8a8fa3);
+}
+
+.shortcut-hint {
+  font-size: 12px;
+  color: var(--n-text-color-3, #8a8fa3);
 }
 </style>

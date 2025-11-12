@@ -13,7 +13,7 @@ export const branchApi = {
     payload: { name: string; base?: string; createWorktree?: boolean },
   ): Promise<void> {
     await http
-      .Post(`/projects/${projectId}/branches`, {
+      .Post(`/projects/${projectId}/branches/create`, {
         name: payload.name,
         base: payload.base ?? '',
         createWorktree: payload.createWorktree ?? false,
@@ -22,7 +22,12 @@ export const branchApi = {
   },
 
   async delete(projectId: string, branchName: string, force = false): Promise<void> {
-    await http.Delete(`/projects/${projectId}/branches/${encodeURIComponent(branchName)}?force=${force}`).send();
+    await http
+      .Post(
+        `/projects/${projectId}/branches/${encodeURIComponent(branchName)}?force=${force}`,
+        {},
+      )
+      .send();
   },
 
   async merge(

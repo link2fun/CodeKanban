@@ -26,7 +26,7 @@ export const notepadApi = {
   },
 
   async create(data: { projectId?: string; name?: string; content?: string }): Promise<NotePad> {
-    const body = (await http.Post<ItemResponse<NotePad>>('/notepads', data).send()) ?? {};
+    const body = (await http.Post<ItemResponse<NotePad>>('/notepads/create', data).send()) ?? {};
     if (!body.item) {
       throw new Error('failed to create notepad');
     }
@@ -34,7 +34,8 @@ export const notepadApi = {
   },
 
   async update(id: string, data: { name?: string; content?: string }): Promise<NotePad> {
-    const body = (await http.Patch<ItemResponse<NotePad>>(`/notepads/${id}`, data).send()) ?? {};
+    const body =
+      (await http.Post<ItemResponse<NotePad>>(`/notepads/${id}/update`, data).send()) ?? {};
     if (!body.item) {
       throw new Error('failed to update notepad');
     }
@@ -42,7 +43,7 @@ export const notepadApi = {
   },
 
   async delete(id: string): Promise<void> {
-    await http.Delete(`/notepads/${id}`).send();
+    await http.Post(`/notepads/${id}/delete`, {}).send();
   },
 
   async move(id: string, orderIndex: number): Promise<NotePad> {

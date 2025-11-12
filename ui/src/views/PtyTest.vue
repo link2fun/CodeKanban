@@ -234,7 +234,7 @@ async function stopSession() {
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify({ type: 'close' }));
     } else {
-      await http.Delete(`/pty-test/sessions/${session.value.id}`).send();
+      await http.Post(`/pty-test/sessions/${session.value.id}`, {}).send();
     }
     message.success('已请求关闭会话');
   } catch (error: any) {
@@ -395,7 +395,7 @@ async function cleanupSession(sendDelete: boolean) {
 
   if (sendDelete && session.value) {
     try {
-      await http.Delete(`/pty-test/sessions/${session.value.id}`).send();
+      await http.Post(`/pty-test/sessions/${session.value.id}`, {}).send();
     } catch {
       // Ignore cleanup errors.
     }

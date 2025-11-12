@@ -33,7 +33,7 @@ type commitWorktreeInput struct {
 func registerWorktreeRoutes(group *huma.Group) {
 	worktreeSvc := service.NewWorktreeService()
 
-	huma.Post(group, "/projects/{projectId}/worktrees", func(
+	huma.Post(group, "/projects/{projectId}/worktrees/create", func(
 		ctx context.Context,
 		input *struct {
 			ProjectID string `path:"projectId"`
@@ -97,7 +97,7 @@ func registerWorktreeRoutes(group *huma.Group) {
 		op.Tags = []string{worktreeTag}
 	})
 
-	huma.Delete(group, "/worktrees/{id}", func(
+	huma.Post(group, "/worktrees/{id}", func(
 		ctx context.Context,
 		input *struct {
 			ID           string `path:"id"`

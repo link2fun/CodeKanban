@@ -56,7 +56,7 @@ func registerTaskRoutes(group *huma.Group) {
 	taskService := &model.TaskService{}
 	commentService := model.NewTaskCommentService()
 
-	huma.Post(group, "/projects/{projectId}/tasks", func(ctx context.Context, input *struct {
+	huma.Post(group, "/projects/{projectId}/tasks/create", func(ctx context.Context, input *struct {
 		ProjectID string `path:"projectId"`
 		Body      createTaskBody
 	}) (*h.ItemResponse[tables.TaskTable], error) {
@@ -142,7 +142,7 @@ func registerTaskRoutes(group *huma.Group) {
 		op.Tags = []string{taskTag}
 	})
 
-	huma.Patch(group, "/tasks/{id}", func(ctx context.Context, input *struct {
+	huma.Post(group, "/tasks/{id}/update", func(ctx context.Context, input *struct {
 		ID   string `path:"id"`
 		Body updateTaskBody
 	}) (*h.ItemResponse[tables.TaskTable], error) {
@@ -177,7 +177,7 @@ func registerTaskRoutes(group *huma.Group) {
 		op.Tags = []string{taskTag}
 	})
 
-	huma.Delete(group, "/tasks/{id}", func(ctx context.Context, input *struct {
+	huma.Post(group, "/tasks/{id}/delete", func(ctx context.Context, input *struct {
 		ID string `path:"id"`
 	}) (*h.MessageResponse, error) {
 		if err := taskService.DeleteTask(ctx, input.ID); err != nil {
@@ -249,7 +249,7 @@ func registerTaskRoutes(group *huma.Group) {
 		op.Tags = []string{taskCommentTag}
 	})
 
-	huma.Post(group, "/tasks/{id}/comments", func(ctx context.Context, input *struct {
+	huma.Post(group, "/tasks/{id}/comments/create", func(ctx context.Context, input *struct {
 		ID   string `path:"id"`
 		Body createCommentBody
 	}) (*h.ItemResponse[tables.TaskCommentTable], error) {
@@ -267,7 +267,7 @@ func registerTaskRoutes(group *huma.Group) {
 		op.Tags = []string{taskCommentTag}
 	})
 
-	huma.Delete(group, "/task-comments/{id}", func(ctx context.Context, input *struct {
+	huma.Post(group, "/task-comments/{id}", func(ctx context.Context, input *struct {
 		ID string `path:"id"`
 	}) (*h.MessageResponse, error) {
 		if err := commentService.DeleteComment(ctx, input.ID); err != nil {

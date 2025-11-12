@@ -28,6 +28,7 @@ const props = defineProps<{
   tab: TerminalTabState;
   emitter: EventEmitter;
   send: (sessionId: string, payload: any) => void;
+  shouldAutoFocus?: boolean;
 }>();
 
 const containerRef = ref<HTMLDivElement>();
@@ -51,6 +52,8 @@ watch(
     });
   }
 );
+
+const shouldAutoFocus = computed(() => props.shouldAutoFocus !== false);
 
 const overlayMessage = computed(() => {
   const status = props.tab.clientStatus;
@@ -338,7 +341,9 @@ onMounted(() => {
         cols,
         rows,
       });
-      terminal.focus();
+      if (shouldAutoFocus.value) {
+        terminal.focus();
+      }
     };
 
     setTimeout(() => performFit(), 350);
@@ -481,14 +486,20 @@ onMounted(() => {
   props.emitter.on(props.tab.id, handleMessage);
   props.emitter.on('terminal-resize-all', handleTerminalResizeAll);
   props.emitter.on(`terminal-resize-${props.tab.id}`, handleTerminalResizeAll);
+  props.emitter.on('terminal-blur-all', handleTerminalBlurEvent);
   window.addEventListener('resize', handleResize);
 });
+
+function handleTerminalBlurEvent() {
+  terminal?.blur();
+}
 
 onBeforeUnmount(() => {
   persistSnapshot();
   props.emitter.off(props.tab.id, handleMessage);
   props.emitter.off('terminal-resize-all', handleTerminalResizeAll);
   props.emitter.off(`terminal-resize-${props.tab.id}`, handleTerminalResizeAll);
+  props.emitter.off('terminal-blur-all', handleTerminalBlurEvent);
   window.removeEventListener('resize', handleResize);
   if (containerRef.value) {
     if (pasteHandler) {

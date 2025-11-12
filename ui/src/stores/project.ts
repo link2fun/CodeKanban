@@ -1,10 +1,12 @@
-import { defineStore } from 'pinia';
+import { defineStore, storeToRefs } from 'pinia';
 import { computed, ref, watch } from 'vue';
 import { projectApi, systemApi, worktreeApi } from '@/api/project';
 import type { Project, Worktree } from '@/types/models';
+import { useSettingsStore } from '@/stores/settings';
+import type { EditorPreference } from '@/stores/settings';
 
 const RECENT_PROJECTS_KEY = 'recent_projects';
-const MAX_RECENT_PROJECTS = 5;
+const DEFAULT_MAX_RECENT_PROJECTS = 10;
 
 export const useProjectStore = defineStore('project', () => {
   const projects = ref<Project[]>([]);
@@ -15,6 +17,18 @@ export const useProjectStore = defineStore('project', () => {
   const selectedWorktreeId = ref<string | null>(null);
 
   const hasProjects = computed(() => projects.value.length > 0);
+
+  const settingsStore = useSettingsStore();
+  const { recentProjectsLimit } = storeToRefs(settingsStore);
+  const resolvedRecentLimit = computed(() => Math.max(recentProjectsLimit.value || DEFAULT_MAX_RECENT_PROJECTS, 1));
+
+  watch(
+    resolvedRecentLimit,
+    limit => {
+      enforceRecentLimit(limit);
+    },
+    { immediate: true },
+  );
 
   const selectedWorktree = computed(() => {
     if (!selectedWorktreeId.value) {
@@ -56,7 +70,9 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
-  async function createProject(payload: { name: string; path: string; description?: string }) {
+  async function createProject(
+    payload: { name: string; path: string; description?: string; hidePath: boolean },
+  ) {
     const project = await projectApi.create(payload);
     projects.value.push(project);
     return project;
@@ -121,6 +137,14 @@ export const useProjectStore = defineStore('project', () => {
     await systemApi.openExplorer(path);
   }
 
+  async function openInEditor(path: string, editor: EditorPreference, customCommand?: string) {
+    await systemApi.openEditor({
+      path,
+      editor,
+      customCommand,
+    });
+  }
+
   function setSelectedWorktree(worktreeId: string | null) {
     selectedWorktreeId.value = worktreeId;
   }
@@ -131,10 +155,16 @@ export const useProjectStore = defineStore('project', () => {
       recentProjectIds.value.splice(index, 1);
     }
     recentProjectIds.value.unshift(projectId);
-    if (recentProjectIds.value.length > MAX_RECENT_PROJECTS) {
-      recentProjectIds.value = recentProjectIds.value.slice(0, MAX_RECENT_PROJECTS);
-    }
+    enforceRecentLimit(resolvedRecentLimit.value);
     saveRecentProjectIds(recentProjectIds.value);
+  }
+
+  function enforceRecentLimit(limit: number) {
+    const normalizedLimit = Math.max(Math.floor(limit ?? DEFAULT_MAX_RECENT_PROJECTS), 1);
+    if (recentProjectIds.value.length > normalizedLimit) {
+      recentProjectIds.value = recentProjectIds.value.slice(0, normalizedLimit);
+      saveRecentProjectIds(recentProjectIds.value);
+    }
   }
 
   return {
@@ -157,6 +187,7 @@ export const useProjectStore = defineStore('project', () => {
     updateWorktreeInList,
     syncWorktrees,
     openInExplorer,
+    openInEditor,
     addRecentProject,
     setSelectedWorktree,
   };

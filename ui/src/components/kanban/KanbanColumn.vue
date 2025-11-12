@@ -1,7 +1,21 @@
 <template>
   <div class="kanban-column">
     <div class="column-header">
-      <h3>{{ title }}</h3>
+      <div class="column-header__title">
+        <h3>{{ title }}</h3>
+        <n-button
+          v-if="showAddButton"
+          circle
+          size="tiny"
+          quaternary
+          :disabled="addDisabled"
+          @click="emit('add-click')"
+        >
+          <n-icon size="16">
+            <AddOutline />
+          </n-icon>
+        </n-button>
+      </div>
       <n-badge :value="tasks.length" :max="99" />
     </div>
 
@@ -21,6 +35,7 @@
             @edit="emit('task-edit', element)"
             @delete="emit('task-delete', element)"
             @copy="emit('task-copy', element)"
+            @start-work="emit('task-start-work', element)"
           />
         </template>
       </draggable>
@@ -30,6 +45,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { AddOutline } from '@vicons/ionicons5';
 import draggable from 'vuedraggable';
 import TaskCard from './TaskCard.vue';
 import type { Task } from '@/types/models';
@@ -38,6 +54,8 @@ const props = defineProps<{
   title: string;
   status: Task['status'];
   tasks: Task[];
+  showAddButton?: boolean;
+  addDisabled?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -46,6 +64,8 @@ const emit = defineEmits<{
   'task-edit': [Task];
   'task-delete': [Task];
   'task-copy': [Task];
+  'task-start-work': [Task];
+  'add-click': [];
 }>();
 
 const localTasks = ref<Task[]>([]);
@@ -83,10 +103,11 @@ function handleChange(event: any) {
 .kanban-column {
   display: flex;
   flex-direction: column;
-  height: 100%;
   background-color: #f5f5f5;
   border-radius: 8px;
   border: 1px solid #e0e0e0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .column-header {
@@ -95,6 +116,13 @@ function handleChange(event: any) {
   justify-content: space-between;
   padding: 12px 16px;
   border-bottom: 1px solid var(--n-border-color);
+  flex-shrink: 0;
+}
+
+.column-header__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .column-header h3 {
@@ -105,16 +133,14 @@ function handleChange(event: any) {
 .column-body {
   flex: 1;
   padding: 12px;
-  display: flex;
+  overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
 }
 
 .task-list {
-  flex: 1;
-  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  overflow-y: auto;
 }
 </style>

@@ -54,5 +54,8 @@ export function useTerminalClient(projectIdRef: Ref<string>) {
     },
     send: store.send,
     disconnectTab: store.disconnectTab,
+    reorderTabs(fromIndex: number, toIndex: number) {
+      store.reorderTabs(projectIdRef.value, fromIndex, toIndex);
+    },
   };
 }

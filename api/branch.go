@@ -50,7 +50,7 @@ func registerBranchRoutes(group *huma.Group) {
 		op.Tags = []string{branchTag}
 	})
 
-	huma.Post(group, "/projects/{projectId}/branches", func(
+	huma.Post(group, "/projects/{projectId}/branches/create", func(
 		ctx context.Context,
 		input *struct {
 			ProjectID string `path:"projectId"`
@@ -69,7 +69,7 @@ func registerBranchRoutes(group *huma.Group) {
 		op.Tags = []string{branchTag}
 	})
 
-	huma.Delete(group, "/projects/{projectId}/branches/{branchName}", func(
+	huma.Post(group, "/projects/{projectId}/branches/{branchName}", func(
 		ctx context.Context,
 		input *struct {
 			ProjectID  string `path:"projectId"`

@@ -243,6 +243,28 @@ export const useTerminalStore = defineStore('terminal', () => {
     activeTabByProject.set(projectId, bucket[0].id);
   }
 
+  function reorderTabs(projectId: string | undefined, fromIndex: number, toIndex: number) {
+    if (!projectId) {
+      return;
+    }
+    const bucket = tabStore.get(projectId);
+    if (!bucket || bucket.length < 2) {
+      return;
+    }
+    if (fromIndex === toIndex) {
+      return;
+    }
+    if (fromIndex < 0 || fromIndex >= bucket.length) {
+      return;
+    }
+    const clampedToIndex = Math.max(0, Math.min(bucket.length - 1, toIndex));
+    const [tab] = bucket.splice(fromIndex, 1);
+    if (!tab) {
+      return;
+    }
+    bucket.splice(clampedToIndex, 0, tab);
+  }
+
   function attachOrUpdateSession(
     session: TerminalSession,
     options?: { activate?: boolean; projectIdOverride?: string },
@@ -417,5 +439,6 @@ export const useTerminalStore = defineStore('terminal', () => {
     closeSession,
     send,
     disconnectTab,
+    reorderTabs,
   };
 });

@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, provide, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useTitle } from '@vueuse/core';
 import { useProjectStore } from '@/stores/project';
@@ -51,6 +51,9 @@ const route = useRoute();
 const projectStore = useProjectStore();
 const terminalPanelRef = ref<InstanceType<typeof TerminalPanel> | null>(null);
 const showEditDialog = ref(false);
+
+// 提供终端面板引用给子组件
+provide('terminalPanelRef', terminalPanelRef);
 
 const currentProjectId = computed(() =>
   typeof route.params.id === 'string' ? route.params.id : ''

@@ -17,11 +17,11 @@
             </template>
             总设置
           </n-button>
-          <n-button quaternary @click="goToPtyTest">
+          <n-button quaternary @click="goToGuide">
             <template #icon>
-              <n-icon><TerminalOutline /></n-icon>
+              <n-icon><BookOutline /></n-icon>
             </template>
-            PTY 测试
+            使用指引
           </n-button>
           <n-button type="primary" @click="showCreateDialog = true">
             <template #icon>
@@ -99,7 +99,7 @@ import {
   FolderOutline,
   GitBranchOutline,
   SettingsOutline,
-  TerminalOutline,
+  BookOutline,
 } from '@vicons/ionicons5';
 import ProjectCreateDialog from '@/components/project/ProjectCreateDialog.vue';
 import ProjectEditDialog from '@/components/project/ProjectEditDialog.vue';
@@ -135,8 +135,8 @@ function goToSettings() {
   router.push({ name: 'settings' });
 }
 
-function goToPtyTest() {
-  router.push({ name: 'pty-test' });
+function goToGuide() {
+  router.push({ name: 'guide' });
 }
 
 type ProjectOption = DropdownOption & { project: Project };

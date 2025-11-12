@@ -80,7 +80,7 @@ func (c *ptyTestController) registerHTTP(group *huma.Group) {
 		op.Tags = []string{ptyTestTag}
 	})
 
-	huma.Delete(group, "/pty-test/sessions/{sessionId}", func(
+	huma.Post(group, "/pty-test/sessions/{sessionId}", func(
 		_ context.Context,
 		input *struct {
 			SessionID string `path:"sessionId"`
@@ -252,3 +252,4 @@ type ptyTestSessionView struct {
 	WsPath     string    `json:"wsPath"`
 	WsURL      string    `json:"wsUrl"`
 }
+

@@ -59,6 +59,7 @@ import type { Task } from '@/types/models';
 const props = defineProps<{
   show: boolean;
   projectId: string;
+  defaultStatus?: Task['status'];
 }>();
 
 const emit = defineEmits<{
@@ -69,6 +70,7 @@ const emit = defineEmits<{
 const projectStore = useProjectStore();
 const { createTask } = useTaskActions();
 const message = useMessage();
+const resolvedStatus = computed<Task['status']>(() => props.defaultStatus ?? 'todo');
 
 const formRef = ref<FormInst | null>(null);
 const form = ref({
@@ -140,6 +142,7 @@ async function handleSubmit() {
     const response = await createTask.send(props.projectId, {
       title: form.value.title,
       description: form.value.description,
+      status: resolvedStatus.value,
       priority: form.value.priority,
       worktreeId: form.value.worktreeId,
       dueDate: form.value.dueDate,

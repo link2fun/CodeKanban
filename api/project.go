@@ -19,23 +19,23 @@ type createProjectInput struct {
 		Path             string  `json:"path" minLength:"1" doc:"本地项目目录路径（可非 Git 仓库）"`
 		Description      string  `json:"description" doc:"项目描述"`
 		WorktreeBasePath *string `json:"worktreeBasePath,omitempty" doc:"Worktree 基础路径（可选，默认为项目目录下的 worktrees 子目录）"`
-		HidePath         *bool   `json:"hidePath,omitempty" doc:"�Ƿ�����·��"`
+		HidePath         *bool   `json:"hidePath,omitempty" doc:"是否隐藏真实路径"`
 	}
 }
 
 type updateProjectInput struct {
 	ID   string `path:"id"`
 	Body struct {
-		Name        string `json:"name" minLength:"1" maxLength:"100" doc:"��Ŀ����"`
-		Description string `json:"description" doc:"��Ŀ����"`
-		HidePath    bool   `json:"hidePath" doc:"�Ƿ�����·��"`
+		Name        string `json:"name" minLength:"1" maxLength:"100" doc:"项目名称"`
+		Description string `json:"description" doc:"项目描述"`
+		HidePath    bool   `json:"hidePath" doc:"是否隐藏真实路径"`
 	}
 }
 
 func registerProjectRoutes(group *huma.Group) {
 	service := model.NewProjectService()
 
-	huma.Post(group, "/projects", func(ctx context.Context, input *createProjectInput) (*h.ItemResponse[model.Project], error) {
+	huma.Post(group, "/projects/create", func(ctx context.Context, input *createProjectInput) (*h.ItemResponse[model.Project], error) {
 		worktreeBasePath := ""
 		if input.Body.WorktreeBasePath != nil {
 			worktreeBasePath = *input.Body.WorktreeBasePath
@@ -119,7 +119,7 @@ func registerProjectRoutes(group *huma.Group) {
 		op.Tags = []string{projectTag}
 	})
 
-	huma.Patch(group, "/projects/{id}", func(ctx context.Context, input *updateProjectInput) (*h.ItemResponse[model.Project], error) {
+	huma.Post(group, "/projects/{id}/update", func(ctx context.Context, input *updateProjectInput) (*h.ItemResponse[model.Project], error) {
 		project, err := service.UpdateProject(ctx, input.ID, model.UpdateProjectParams{
 			Name:        input.Body.Name,
 			Description: input.Body.Description,
@@ -143,11 +143,11 @@ func registerProjectRoutes(group *huma.Group) {
 		return resp, nil
 	}, func(op *huma.Operation) {
 		op.OperationID = "project-update"
-		op.Summary = "�༭��Ŀ"
+		op.Summary = "编辑项目"
 		op.Tags = []string{projectTag}
 	})
 
-	huma.Delete(group, "/projects/{id}", func(ctx context.Context, input *struct {
+	huma.Post(group, "/projects/{id}/delete", func(ctx context.Context, input *struct {
 		ID string `path:"id"`
 	}) (*h.MessageResponse, error) {
 		if err := service.DeleteProject(ctx, input.ID); err != nil {

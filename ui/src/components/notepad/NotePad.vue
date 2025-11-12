@@ -2,13 +2,14 @@
   <div
     class="notepad-container"
     :class="{ collapsed: isCollapsed }"
-    :style="{ width: `${panelWidth}px` }"
+    :style="notepadStyle"
+    @pointerdown.capture="handlePanelPointerDown"
   >
     <!-- 调整大小的拖拽条 -->
     <div class="resize-handle" @mousedown="startResize"></div>
 
     <!-- 折叠按钮 -->
-    <div class="notepad-toggle" @click="toggleCollapse">
+    <div class="notepad-toggle" :title="shortcutTooltip" @click="toggleCollapse">
       <n-icon size="18">
         <component :is="isCollapsed ? ChevronLeftIcon : ChevronRightIcon" />
       </n-icon>
@@ -37,34 +38,45 @@
         </div>
 
         <!-- 标签页 -->
-        <n-tabs
-          v-model:value="activeTabId"
-          type="card"
-          closable
-          size="small"
-          @close="handleCloseTab"
-        >
-          <n-tab-pane
-            v-for="tab in sortedTabs"
-            :key="tab.id"
-            :name="tab.id"
-            :tab="tab.name"
-            :closable="sortedTabs.length > 1"
+        <div class="tab-bar">
+          <Draggable
+            v-model="tabs"
+            item-key="id"
+            tag="div"
+            class="tab-list"
+            :animation="150"
+            ghost-class="tab-ghost"
+            drag-class="tab-dragging"
+            @end="handleTabDragEnd"
           >
-            <template #tab>
-              <div class="tab-label" @dblclick="handleRenameTab(tab)">
-                {{ tab.name }}
+            <template #item="{ element: tab }">
+              <div
+                class="tab-item"
+                :class="{ active: tab.id === activeTabId }"
+                @click="setActiveTab(tab.id)"
+                @dblclick="handleRenameTab(tab)"
+                @contextmenu.prevent="handleRenameTab(tab)"
+              >
+                <span class="tab-label-text">{{ tab.name }}</span>
+                <button
+                  v-if="tabs.length > 1"
+                  class="tab-close-btn"
+                  title="关闭标签"
+                  @click.stop="handleCloseTab(tab.id)"
+                >
+                  <n-icon size="12">
+                    <component :is="CloseIcon" />
+                  </n-icon>
+                </button>
               </div>
             </template>
-          </n-tab-pane>
-          <template #suffix>
-            <n-button size="tiny" quaternary circle @click="handleAddTab">
-              <template #icon>
-                <n-icon><component :is="AddIcon" /></n-icon>
-              </template>
-            </n-button>
-          </template>
-        </n-tabs>
+          </Draggable>
+          <n-button size="tiny" quaternary circle @click="handleAddTab">
+            <template #icon>
+              <n-icon><component :is="AddIcon" /></n-icon>
+            </template>
+          </n-button>
+        </div>
       </div>
 
       <div class="notepad-content">
@@ -76,6 +88,10 @@
           :autosize="{ minRows: 8, maxRows: 25 }"
           @update:value="handleContentChange"
         />
+        <div v-if="activeTab && saveStatusText" class="save-status">
+          <n-spin v-if="isSavingNow || isWaitingToSave" :size="12" :stroke-width="12" />
+          <span>{{ saveStatusText }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -84,28 +100,27 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, h } from 'vue';
 import { useRoute } from 'vue-router';
-import {
-  NTabs,
-  NTabPane,
-  NButton,
-  NButtonGroup,
-  NIcon,
-  NInput,
-  useDialog,
-  useMessage,
-} from 'naive-ui';
+import { NButton, NButtonGroup, NIcon, NInput, NSpin, useDialog, useMessage } from 'naive-ui';
+import { useEventListener } from '@vueuse/core';
+import { storeToRefs } from 'pinia';
 import {
   ChevronBackOutline as ChevronLeftIcon,
   ChevronForwardOutline as ChevronRightIcon,
   Add as AddIcon,
+  CloseOutline as CloseIcon,
 } from '@vicons/ionicons5';
+import Draggable from 'vuedraggable';
 import { notepadApi } from '@/api/notepad';
 import type { NotePad } from '@/types/models';
 import { debounce } from '@/utils/debounce';
+import { useSettingsStore } from '@/stores/settings';
+import { usePanelStack } from '@/composables/usePanelStack';
 
 const message = useMessage();
 const dialog = useDialog();
 const route = useRoute();
+const settingsStore = useSettingsStore();
+const { notepadShortcut } = storeToRefs(settingsStore);
 
 const getInitialCollapsedState = (): boolean => {
   const stored = localStorage.getItem('notepad-collapsed');
@@ -119,9 +134,28 @@ const getInitialWidth = (): number => {
 
 const isCollapsed = ref(getInitialCollapsedState());
 const panelWidth = ref(getInitialWidth());
+const { zIndex: notepadPanelZIndex, bringToFront: bringNotepadToFront } = usePanelStack('notepad-panel');
+const notepadStyle = computed(() => ({
+  width: `${panelWidth.value}px`,
+  zIndex: notepadPanelZIndex.value,
+}));
 const tabs = ref<NotePad[]>([]);
 const activeTabId = ref<string>('');
 const currentScope = ref<'global' | 'project'>('global');
+const pendingSave = ref(false);
+const activeSaveRequests = ref(0);
+const isSavingNow = computed(() => activeSaveRequests.value > 0);
+const isWaitingToSave = computed(() => pendingSave.value && !isSavingNow.value);
+const saveStatusText = computed(() => {
+  if (isSavingNow.value) {
+    return '正在保存...';
+  }
+  if (isWaitingToSave.value) {
+    return '即将保存...';
+  }
+  return '';
+});
+const ORDER_GAP = 1000;
 
 // 获取当前项目ID
 const currentProjectId = computed(() => {
@@ -129,18 +163,73 @@ const currentProjectId = computed(() => {
   return id || null;
 });
 
-const sortedTabs = computed(() => {
-  return [...tabs.value].sort((a, b) => a.orderIndex - b.orderIndex);
-});
-
 const activeTab = computed(() => {
   return tabs.value.find((tab) => tab.id === activeTabId.value);
 });
 
+const setActiveTab = (tabId?: string | null) => {
+  activeTabId.value = tabId ?? '';
+};
+
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value;
   localStorage.setItem('notepad-collapsed', JSON.stringify(isCollapsed.value));
+  if (!isCollapsed.value) {
+    bringNotepadToFront();
+  }
 };
+
+const handlePanelPointerDown = () => {
+  bringNotepadToFront();
+};
+const shortcutTooltip = computed(() => `快捷键：${notepadShortcut.value.display || notepadShortcut.value.code}`);
+const shortcutCode = computed(() => notepadShortcut.value.code);
+
+if (typeof window !== 'undefined') {
+  useEventListener(window, 'keydown', event => {
+    if (event.defaultPrevented || event.repeat) {
+      return;
+    }
+    if (!isNotepadShortcut(event)) {
+      return;
+    }
+    const activeElement = (typeof document !== 'undefined' ? document.activeElement : null) as HTMLElement | null;
+    if (isNotepadElement(activeElement) || isEditableElement(activeElement)) {
+      return;
+    }
+    event.preventDefault();
+    toggleCollapse();
+  });
+}
+
+function isNotepadShortcut(event: KeyboardEvent) {
+  if (event.metaKey || event.ctrlKey || event.altKey) {
+    return false;
+  }
+  return event.code === shortcutCode.value;
+}
+
+function isNotepadElement(element: HTMLElement | null) {
+  if (!element) {
+    return false;
+  }
+  return Boolean(element.closest('.notepad-container'));
+}
+
+function isEditableElement(element: HTMLElement | null) {
+  if (!element) {
+    return false;
+  }
+  if (element.isContentEditable) {
+    return true;
+  }
+  const tagName = element.tagName;
+  if (tagName === 'INPUT' || tagName === 'TEXTAREA') {
+    const input = element as HTMLInputElement | HTMLTextAreaElement;
+    return !input.readOnly && !input.disabled;
+  }
+  return false;
+}
 
 // 调整大小功能
 const isResizing = ref(false);
@@ -177,15 +266,16 @@ const switchScope = async (scope: 'global' | 'project') => {
 
 const loadTabs = async () => {
   try {
-    const projectId = currentScope.value === 'project' ? currentProjectId.value! : undefined;
+    const projectId =
+      currentScope.value === 'project' && currentProjectId.value ? currentProjectId.value : undefined;
     const data = await notepadApi.list(projectId);
-    tabs.value = data;
+    tabs.value = [...data].sort((a, b) => a.orderIndex - b.orderIndex);
 
     // 如果没有标签，创建一个默认标签
     if (tabs.value.length === 0) {
       await handleAddTab();
     } else if (!activeTabId.value || !tabs.value.find((t) => t.id === activeTabId.value)) {
-      activeTabId.value = tabs.value[0].id;
+      setActiveTab(tabs.value[0].id);
     }
   } catch (error) {
     message.error('加载记事板失败');
@@ -195,7 +285,8 @@ const loadTabs = async () => {
 
 const handleAddTab = async () => {
   try {
-    const projectId = currentScope.value === 'project' ? currentProjectId.value! : undefined;
+    const projectId =
+      currentScope.value === 'project' && currentProjectId.value ? currentProjectId.value : undefined;
     const createData: { projectId?: string; name: string; content: string } = {
       name: '新标签',
       content: '',
@@ -206,7 +297,7 @@ const handleAddTab = async () => {
     }
     const newTab = await notepadApi.create(createData);
     tabs.value.push(newTab);
-    activeTabId.value = newTab.id;
+    setActiveTab(newTab.id);
   } catch (error) {
     message.error('创建标签失败');
     console.error(error);
@@ -220,8 +311,8 @@ const handleCloseTab = async (tabId: string) => {
     if (index > -1) {
       tabs.value.splice(index, 1);
     }
-    if (activeTabId.value === tabId && tabs.value.length > 0) {
-      activeTabId.value = tabs.value[0].id;
+    if (activeTabId.value === tabId) {
+      setActiveTab(tabs.value[0]?.id);
     }
   } catch (error) {
     message.error('删除标签失败');
@@ -262,17 +353,93 @@ const handleRenameTab = (tab: NotePad) => {
   });
 };
 
+type DragEndEvent = {
+  oldIndex?: number | null;
+  newIndex?: number | null;
+};
+
+const calculateOrderIndex = (prev?: NotePad, next?: NotePad) => {
+  if (prev && next) {
+    if (prev.orderIndex === next.orderIndex) {
+      return prev.orderIndex + ORDER_GAP / 2;
+    }
+    return (prev.orderIndex + next.orderIndex) / 2;
+  }
+  if (!prev && next) {
+    return next.orderIndex - ORDER_GAP;
+  }
+  if (prev && !next) {
+    return prev.orderIndex + ORDER_GAP;
+  }
+  return 0;
+};
+
+const revertTabOrder = (oldIndex: number, newIndex: number) => {
+  if (oldIndex === newIndex) {
+    return;
+  }
+  const [movedTab] = tabs.value.splice(newIndex, 1);
+  if (movedTab) {
+    tabs.value.splice(oldIndex, 0, movedTab);
+  }
+};
+
+const handleTabDragEnd = async ({ oldIndex, newIndex }: DragEndEvent) => {
+  if (
+    oldIndex === undefined ||
+    newIndex === undefined ||
+    oldIndex === null ||
+    newIndex === null ||
+    oldIndex === newIndex
+  ) {
+    return;
+  }
+
+  const movedTab = tabs.value[newIndex];
+  if (!movedTab) {
+    return;
+  }
+
+  const prevTab = tabs.value[newIndex - 1];
+  const nextTab = tabs.value[newIndex + 1];
+  const previousOrderIndex = movedTab.orderIndex;
+  const newOrderIndex = calculateOrderIndex(prevTab, nextTab);
+
+  if (newOrderIndex === previousOrderIndex) {
+    return;
+  }
+
+  movedTab.orderIndex = newOrderIndex;
+  try {
+    const updated = await notepadApi.move(movedTab.id, newOrderIndex);
+    const targetIndex = tabs.value.findIndex((tab) => tab.id === updated.id);
+    if (targetIndex > -1) {
+      tabs.value[targetIndex] = updated;
+    }
+  } catch (error) {
+    message.error('移动标签失败');
+    movedTab.orderIndex = previousOrderIndex;
+    revertTabOrder(oldIndex, newIndex);
+    console.error(error);
+  }
+};
+
 const saveContent = debounce(async (tabId: string, content: string) => {
+  pendingSave.value = false;
+  activeSaveRequests.value += 1;
   try {
     await notepadApi.update(tabId, { content });
   } catch (error) {
     message.error('保存失败');
     console.error(error);
+  } finally {
+    activeSaveRequests.value = Math.max(0, activeSaveRequests.value - 1);
   }
-}, 1000);
+}, 3000);
 
 const handleContentChange = (value: string) => {
   if (activeTab.value) {
+    pendingSave.value = true;
     saveContent(activeTab.value.id, value);
   }
 };
@@ -312,7 +479,6 @@ onMounted(() => {
   background: #fafafa;
   border-left: 1px solid #e0e0e0;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
-  z-index: 999;
   transition: transform 0.3s ease;
   display: flex;
   flex-direction: column;
@@ -387,10 +553,80 @@ onMounted(() => {
   background: var(--app-surface-color, #ffffff);
 }
 
-.tab-label {
-  padding: 2px 6px;
-  user-select: none;
+.tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab-list {
+  display: flex;
+  flex: 1;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.tab-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid #dedede;
+  border-radius: 4px;
   font-size: 12px;
+  background: var(--app-surface-color, #ffffff);
+  cursor: grab;
+  user-select: none;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.tab-item.active {
+  border-color: #1890ff;
+  color: #1890ff;
+  background: rgba(24, 144, 255, 0.1);
+}
+
+.tab-item:active {
+  cursor: grabbing;
+}
+
+.tab-label-text {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-close-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  color: inherit;
+  cursor: pointer;
+}
+
+.tab-close-btn:hover {
+  color: #ff4d4f;
+}
+
+.tab-ghost {
+  opacity: 0.4;
+}
+
+.tab-dragging {
+  cursor: grabbing;
+}
+
+.save-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 6px;
 }
 
 :deep(.n-input__textarea-el) {
@@ -398,14 +634,5 @@ onMounted(() => {
   font-size: 12px;
   line-height: 1.6;
   background: var(--app-surface-color, #ffffff);
-}
-
-:deep(.n-tabs .n-tabs-tab) {
-  font-size: 12px;
-  padding: 4px 8px;
-}
-
-:deep(.n-tabs-nav) {
-  font-size: 12px;
 }
 </style>

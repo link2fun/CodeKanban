@@ -26,8 +26,10 @@ export const projectApi = {
     return body.item;
   },
 
-  async create(data: { name: string; path: string; description?: string }): Promise<Project> {
-    const body = (await http.Post<ItemResponse<Project>>('/projects', data).send()) ?? {};
+  async create(
+    data: { name: string; path: string; description?: string; hidePath: boolean },
+  ): Promise<Project> {
+    const body = (await http.Post<ItemResponse<Project>>('/projects/create', data).send()) ?? {};
     if (!body.item) {
       throw new Error('failed to create project');
     }
@@ -39,7 +41,7 @@ export const projectApi = {
     data: { name: string; description?: string; hidePath: boolean },
   ): Promise<Project> {
     const body =
-      (await http.Patch<ItemResponse<Project>>(`/projects/${id}`, data).send()) ?? {};
+      (await http.Post<ItemResponse<Project>>(`/projects/${id}/update`, data).send()) ?? {};
     if (!body.item) {
       throw new Error('failed to update project');
     }
@@ -47,7 +49,7 @@ export const projectApi = {
   },
 
   async delete(id: string): Promise<void> {
-    await http.Delete(`/projects/${id}`).send();
+    await http.Post(`/projects/${id}/delete`, {}).send();
   },
 };
 
@@ -69,7 +71,7 @@ export const worktreeApi = {
     };
     const body =
       (await http.Post<ItemResponse<Worktree>>(
-        `/projects/${projectId}/worktrees`,
+        `/projects/${projectId}/worktrees/create`,
         payload,
       ).send()) ?? {};
     if (!body.item) {
@@ -79,7 +81,7 @@ export const worktreeApi = {
   },
 
   async delete(id: string, force = false, deleteBranch = false): Promise<void> {
-    await http.Delete(`/worktrees/${id}?force=${force}&deleteBranch=${deleteBranch}`).send();
+    await http.Post(`/worktrees/${id}?force=${force}&deleteBranch=${deleteBranch}`, {}).send();
   },
 
   async sync(projectId: string): Promise<void> {
@@ -93,5 +95,8 @@ export const systemApi = {
   },
   async openTerminal(path: string): Promise<void> {
     await http.Post('/system/open-terminal', { path }).send();
+  },
+  async openEditor(options: { path: string; editor: string; customCommand?: string }): Promise<void> {
+    await http.Post('/system/open-editor', options).send();
   },
 };

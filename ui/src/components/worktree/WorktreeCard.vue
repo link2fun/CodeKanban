@@ -13,11 +13,26 @@
           </n-ellipsis>
           <n-tag v-if="worktree.isMain" size="small" round type="info">默认</n-tag>
         </n-space>
-        <n-space align="center" :size="8">
+        <n-space align="center" :size="0" class="worktree-card__actions-header">
+          <n-button-group size="tiny">
+            <n-tooltip trigger="hover" placement="bottom">
+              <template #trigger>
+                <n-button text size="tiny" @click.stop="handleEditorButtonClick" class="action-button">
+                  <n-icon :size="14"><CodeSlashOutline /></n-icon>
+                </n-button>
+              </template>
+              使用 {{ defaultEditorLabel }} 打开
+            </n-tooltip>
+            <n-dropdown :options="editorDropdownOptions" @select="handleEditorSelect">
+              <n-button text size="tiny" @click.stop class="action-button">
+                <n-icon :size="14"><ChevronDownOutline /></n-icon>
+              </n-button>
+            </n-dropdown>
+          </n-button-group>
           <n-tooltip trigger="hover" placement="bottom">
             <template #trigger>
-              <n-button text size="small" @click.stop="emit('refresh', worktree.id)">
-                <n-icon><RefreshOutline /></n-icon>
+              <n-button text size="tiny" @click.stop="emit('refresh', worktree.id)" class="action-button">
+                <n-icon :size="14"><RefreshOutline /></n-icon>
               </n-button>
             </template>
             <div>
@@ -29,15 +44,15 @@
           </n-tooltip>
           <n-tooltip trigger="hover" placement="bottom">
             <template #trigger>
-              <n-button text size="small" @click.stop="emit('open-terminal', worktree)">
-                <n-icon><Terminal /></n-icon>
+              <n-button text size="tiny" @click.stop="emit('open-terminal', worktree)" class="action-button">
+                <n-icon :size="14"><Terminal /></n-icon>
               </n-button>
             </template>
             打开终端
           </n-tooltip>
           <n-dropdown :options="actions" @select="handleAction">
-            <n-button text size="small" @click.stop>
-              <n-icon><EllipsisHorizontalOutline /></n-icon>
+            <n-button text size="tiny" @click.stop class="action-button">
+              <n-icon :size="14"><EllipsisHorizontalOutline /></n-icon>
             </n-button>
           </n-dropdown>
         </n-space>
@@ -85,27 +100,41 @@ import { computed } from 'vue';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import type { DropdownOption } from 'naive-ui';
-import { EllipsisHorizontalOutline, RefreshOutline, Terminal } from '@vicons/ionicons5';
+import { ChevronDownOutline, CodeSlashOutline, EllipsisHorizontalOutline, RefreshOutline, Terminal } from '@vicons/ionicons5';
 import GitStatusBadge from '@/components/common/GitStatusBadge.vue';
 import type { Worktree } from '@/types/models';
+import type { EditorPreference } from '@/stores/settings';
+import { DEFAULT_EDITOR, EDITOR_OPTIONS, EDITOR_LABEL_MAP, isEditorPreference } from '@/constants/editor';
 
 dayjs.extend(relativeTime);
 dayjs.locale('zh-cn');
 
-const props = defineProps<{
+type EditorOption = {
+  label: string;
+  value: EditorPreference;
+  disabled?: boolean;
+};
+
+const props = withDefaults(defineProps<{
   worktree: Worktree;
   selected?: boolean;
   canSync?: boolean;
   canMerge?: boolean;
   canCommit?: boolean;
   isDeleting?: boolean;
-}>();
+  defaultEditor?: EditorPreference;
+  editorOptions?: EditorOption[];
+}>(), {
+  defaultEditor: DEFAULT_EDITOR,
+  editorOptions: () => EDITOR_OPTIONS.map(option => ({ ...option })),
+});
 
 const emit = defineEmits<{
   refresh: [id: string];
   delete: [worktree: Worktree];
   'open-explorer': [path: string];
   'open-terminal': [worktree: Worktree];
+  'open-editor': [payload: { worktree: Worktree; editor: EditorPreference }];
   select: [id: string];
   'sync-default': [worktree: Worktree];
   'merge-to-default': [payload: { worktree: Worktree; strategy: 'merge' | 'squash' }];
@@ -151,6 +180,27 @@ const actions = computed<DropdownOption[]>(() => {
   return baseActions;
 });
 
+const resolvedDefaultEditor = computed<EditorPreference>(() =>
+  props.defaultEditor && isEditorPreference(props.defaultEditor) ? props.defaultEditor : DEFAULT_EDITOR,
+);
+
+const resolvedEditorOptions = computed<EditorOption[]>(() =>
+  (props.editorOptions && props.editorOptions.length
+    ? props.editorOptions
+    : EDITOR_OPTIONS
+  ).map(option => ({ ...option })),
+);
+
+const editorDropdownOptions = computed<DropdownOption[]>(() =>
+  resolvedEditorOptions.value.map(option => ({
+    label: option.label,
+    key: option.value,
+    disabled: option.disabled,
+  })),
+);
+
+const defaultEditorLabel = computed(() => EDITOR_LABEL_MAP[resolvedDefaultEditor.value] ?? '编辑器');
+
 function handleAction(key: string | number) {
   switch (key) {
     case 'explorer':
@@ -177,6 +227,17 @@ function handleAction(key: string | number) {
     default:
       break;
   }
+}
+
+function handleEditorButtonClick() {
+  emit('open-editor', { worktree: props.worktree, editor: resolvedDefaultEditor.value });
+}
+
+function handleEditorSelect(key: string | number) {
+  if (typeof key !== 'string' || !isEditorPreference(key)) {
+    return;
+  }
+  emit('open-editor', { worktree: props.worktree, editor: key });
 }
 
 function formatCommitTime(time: string | null) {
@@ -223,5 +284,42 @@ function handleSelect() {
   display: flex;
   gap: 8px;
   margin-top: 8px;
+}
+
+.worktree-card__actions-header {
+  display: flex;
+  align-items: center;
+}
+
+.worktree-card__actions-header :deep(.n-space-item) {
+  margin-left: -4px !important;
+}
+
+.worktree-card__actions-header :deep(.n-space-item:first-child) {
+  margin-left: 0 !important;
+}
+
+.worktree-card__actions-header :deep(.action-button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: unset !important;
+  width: auto !important;
+  padding: 0 3px !important;
+}
+
+.worktree-card__actions-header :deep(.n-button-group .action-button) {
+  padding: 0 !important;
+}
+
+.worktree-card__actions-header :deep(.n-button-group .action-button + .action-button) {
+  margin-left: -14px !important;
+}
+
+.worktree-card__actions-header :deep(.action-button .n-icon) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

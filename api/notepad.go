@@ -34,7 +34,7 @@ type moveNotePadBody struct {
 func registerNotePadRoutes(group *huma.Group) {
 	service := &model.NotePadService{}
 
-	huma.Post(group, "/notepads", func(ctx context.Context, input *struct {
+	huma.Post(group, "/notepads/create", func(ctx context.Context, input *struct {
 		Body createNotePadBody
 	}) (*h.ItemResponse[tables.NotePadTable], error) {
 		notepad, err := service.CreateNotePad(ctx, &model.CreateNotePadRequest{
@@ -95,7 +95,7 @@ func registerNotePadRoutes(group *huma.Group) {
 		op.Tags = []string{notepadTag}
 	})
 
-	huma.Patch(group, "/notepads/{id}", func(ctx context.Context, input *struct {
+	huma.Post(group, "/notepads/{id}/update", func(ctx context.Context, input *struct {
 		ID   string `path:"id"`
 		Body updateNotePadBody
 	}) (*h.ItemResponse[tables.NotePadTable], error) {
@@ -116,7 +116,7 @@ func registerNotePadRoutes(group *huma.Group) {
 		op.Tags = []string{notepadTag}
 	})
 
-	huma.Delete(group, "/notepads/{id}", func(ctx context.Context, input *struct {
+	huma.Post(group, "/notepads/{id}/delete", func(ctx context.Context, input *struct {
 		ID string `path:"id"`
 	}) (*h.MessageResponse, error) {
 		if err := service.DeleteNotePad(ctx, input.ID); err != nil {

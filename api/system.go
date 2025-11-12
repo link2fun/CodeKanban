@@ -19,6 +19,14 @@ type openPathInput struct {
 	} `json:"body"`
 }
 
+type openEditorInput struct {
+	Body struct {
+		Path          string `json:"path" doc:"目标路径" required:"true"`
+		Editor        string `json:"editor" doc:"目标编辑器(vscode/cursor/trae/zed/custom)" required:"true"`
+		CustomCommand string `json:"customCommand,omitempty" doc:"自定义命令，使用 {{path}} 作为路径占位符"`
+	} `json:"body"`
+}
+
 func registerSystemRoutes(group *huma.Group) {
 	huma.Post(group, "/system/open-explorer", func(ctx context.Context, input *openPathInput) (*h.MessageResponse, error) {
 		if err := system.OpenExplorer(input.Body.Path); err != nil {
@@ -47,6 +55,20 @@ func registerSystemRoutes(group *huma.Group) {
 		op.Summary = "打开终端"
 		op.Tags = []string{systemTag}
 	})
+
+	huma.Post(group, "/system/open-editor", func(ctx context.Context, input *openEditorInput) (*h.MessageResponse, error) {
+		if err := system.OpenEditor(input.Body.Path, input.Body.Editor, input.Body.CustomCommand); err != nil {
+			return nil, mapSystemError(err)
+		}
+
+		resp := h.NewMessageResponse("editor opened")
+		resp.Status = http.StatusOK
+		return resp, nil
+	}, func(op *huma.Operation) {
+		op.OperationID = "system-open-editor"
+		op.Summary = "使用指定编辑器打开目录"
+		op.Tags = []string{systemTag}
+	})
 }
 
 func mapSystemError(err error) error {
@@ -58,6 +80,11 @@ func mapSystemError(err error) error {
 	case errors.Is(err, system.ErrNoFileManager),
 		errors.Is(err, system.ErrNoTerminal):
 		return huma.Error503ServiceUnavailable(err.Error())
+	case errors.Is(err, system.ErrEditorCommandMissing):
+		return huma.Error503ServiceUnavailable(err.Error())
+	case errors.Is(err, system.ErrUnsupportedEditor),
+		errors.Is(err, system.ErrCustomEditorCommand):
+		return huma.Error400BadRequest(err.Error())
 	default:
 		return huma.Error500InternalServerError(err.Error())
 	}

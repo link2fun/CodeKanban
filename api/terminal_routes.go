@@ -98,7 +98,7 @@ func (c *terminalController) registerHTTP(group *huma.Group) {
 		op.Tags = []string{terminalTag}
 	})
 
-	huma.Delete(group, "/projects/{projectId}/terminals/{sessionId}", func(
+	huma.Post(group, "/projects/{projectId}/terminals/{sessionId}/close", func(
 		ctx context.Context,
 		input *struct {
 			ProjectID string `path:"projectId"`
@@ -120,7 +120,7 @@ func (c *terminalController) registerHTTP(group *huma.Group) {
 		op.Tags = []string{terminalTag}
 	})
 
-	huma.Patch(group, "/projects/{projectId}/terminals/{sessionId}", func(
+	huma.Post(group, "/projects/{projectId}/terminals/{sessionId}/rename", func(
 		ctx context.Context,
 		input *terminalRenameInput,
 	) (*h.ItemResponse[terminalSessionView], error) {

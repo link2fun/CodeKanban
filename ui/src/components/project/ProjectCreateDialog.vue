@@ -31,6 +31,12 @@
           placeholder="输入项目描述（可选）"
         />
       </n-form-item>
+      <n-form-item label="隐藏路径" path="hidePath">
+        <n-space align="center">
+          <n-switch v-model:value="formData.hidePath" />
+          <n-text depth="3">开启后，项目列表与侧边栏中将不再展示绝对路径。</n-text>
+        </n-space>
+      </n-form-item>
     </n-form>
   </n-modal>
 </template>
@@ -64,6 +70,7 @@ const formData = ref({
   name: '',
   path: '',
   description: '',
+  hidePath: false,
 });
 
 const rules: FormRules = {
@@ -73,7 +80,7 @@ const rules: FormRules = {
 
 watch(visible, newVal => {
   if (!newVal) {
-    formData.value = { name: '', path: '', description: '' };
+    formData.value = { name: '', path: '', description: '', hidePath: false };
   }
 });
 

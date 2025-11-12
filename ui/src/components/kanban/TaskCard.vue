@@ -12,6 +12,16 @@
       <div class="task-card__actions">
         <n-tooltip trigger="hover" placement="bottom">
           <template #trigger>
+            <n-button quaternary circle size="tiny" type="primary" @click.stop="handleStartWork">
+              <n-icon size="14">
+                <PlayCircleOutline />
+              </n-icon>
+            </n-button>
+          </template>
+          开始工作(启动一个以此命名的终端)
+        </n-tooltip>
+        <n-tooltip trigger="hover" placement="bottom">
+          <template #trigger>
             <n-button quaternary circle size="tiny" @click.stop="handleCopy">
               <n-icon size="14">
                 <CopyOutline />
@@ -65,7 +75,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import dayjs from 'dayjs';
-import { CopyOutline, CreateOutline, TrashOutline } from '@vicons/ionicons5';
+import { CopyOutline, CreateOutline, TrashOutline, PlayCircleOutline } from '@vicons/ionicons5';
 import type { Task } from '@/types/models';
 
 const props = defineProps<{
@@ -77,6 +87,7 @@ const emit = defineEmits<{
   edit: [];
   delete: [];
   copy: [];
+  'start-work': [];
 }>();
 
 const priorityMap: Record<number, { label: string; type: 'default' | 'info' | 'warning' | 'error' }> = {
@@ -101,6 +112,7 @@ const formatDate = (value: string) => dayjs(value).format('MM-DD');
 const handleEdit = () => emit('edit');
 const handleDelete = () => emit('delete');
 const handleCopy = () => emit('copy');
+const handleStartWork = () => emit('start-work');
 </script>
 
 <style scoped>
@@ -122,6 +134,18 @@ const handleCopy = () => emit('copy');
   margin-bottom: 8px;
 }
 
+/* 当空间较窄时，标题和按钮分成两行 */
+@media (max-width: 1200px) {
+  .task-card__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .task-card__actions {
+    justify-content: flex-end;
+  }
+}
+
 .task-card__title {
   display: flex;
   flex-direction: column;
@@ -136,6 +160,7 @@ const handleCopy = () => emit('copy');
   opacity: 0;
   transition: opacity 0.2s ease;
   pointer-events: none;
+  flex-shrink: 0;
 }
 
 .task-card:hover .task-card__actions {

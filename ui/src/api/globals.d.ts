@@ -116,6 +116,10 @@ export interface CreateProjectInputBody {
    */
   description: string;
   /**
+   * �Ƿ�����·��
+   */
+  hidePath?: boolean;
+  /**
    * 项目名称
    */
   name: string;
@@ -193,6 +197,7 @@ export interface Project {
   defaultBranch: string | null;
   deletedAt: string | null;
   description: string | null;
+  hidePath: boolean;
   id: string;
   lastSyncAt: string | null;
   name: string;
@@ -211,6 +216,16 @@ export interface ItemsResponseProjectBody {
    */
   items: Project[] | null;
 }
+export interface MoveNotePadBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 排序索引
+   */
+  orderIndex: number;
+}
 export interface UpdateNotePadBody {
   /**
    * A URL to the JSON Schema for this object.
@@ -225,15 +240,23 @@ export interface UpdateNotePadBody {
    */
   name?: string;
 }
-export interface MoveNotePadBody {
+export interface UpdateProjectInputBody {
   /**
    * A URL to the JSON Schema for this object.
    */
   $schema?: string;
   /**
-   * 排序索引
+   * ��Ŀ����
    */
-  orderIndex: number;
+  description: string;
+  /**
+   * �Ƿ�����·��
+   */
+  hidePath: boolean;
+  /**
+   * ��Ŀ����
+   */
+  name: string;
 }
 export interface CreateBranchBody {
   /**
@@ -337,32 +360,6 @@ export interface TerminalCreateInputBody {
    */
   workingDir: string;
 }
-export interface UpdateTaskBody {
-  /**
-   * A URL to the JSON Schema for this object.
-   */
-  $schema?: string;
-  /**
-   * 任务描述
-   */
-  description?: string;
-  /**
-   * 截止日期
-   */
-  dueDate?: string;
-  /**
-   * 优先级
-   */
-  priority?: number;
-  /**
-   * 标签
-   */
-  tags?: string[];
-  /**
-   * 任务标题
-   */
-  title?: string;
-}
 export interface BindWorktreeBody {
   /**
    * A URL to the JSON Schema for this object.
@@ -400,6 +397,32 @@ export interface MoveTaskBody {
    * 关联 Worktree
    */
   worktreeId?: string;
+}
+export interface UpdateTaskBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 任务描述
+   */
+  description?: string;
+  /**
+   * 截止日期
+   */
+  dueDate?: string;
+  /**
+   * 优先级
+   */
+  priority?: number;
+  /**
+   * 标签
+   */
+  tags?: string[];
+  /**
+   * 任务标题
+   */
+  title?: string;
 }
 export interface Worktree_commit_request {
   /**
@@ -603,6 +626,7 @@ export interface ProjectTable {
   defaultBranch: string;
   deletedAt: DeletedAt;
   description: string;
+  hidePath: boolean;
   id: string;
   lastSyncAt: string | null;
   name: string;
@@ -813,7 +837,7 @@ declare global {
        * **Query Parameters**
        * ```ts
        * type QueryParameters = {
-       *   // 项目ID（为空或global表示全局笔记）
+       *   // 项目ID（为空表示全局笔记）
        *   projectId?: string
        * }
        * ```
@@ -850,7 +874,7 @@ declare global {
         Config extends Alova2MethodConfig<ItemsResponseNotePadTableBody> & {
           params: {
             /**
-             * 项目ID（为空或global表示全局笔记）
+             * 项目ID（为空表示全局笔记）
              */
             projectId?: string;
           };
@@ -863,7 +887,7 @@ declare global {
        *
        * [POST] 创建记事板标签
        *
-       * **path:** /api/v1/notepads
+       * **path:** /api/v1/notepads/create
        *
        * ---
        *
@@ -912,43 +936,6 @@ declare global {
       >(
         config: Config
       ): Alova2Method<ItemResponseNotePadTableBody, 'notepad.create', Config>;
-      /**
-       * ---
-       *
-       * [DELETE] 删除记事板标签
-       *
-       * **path:** /api/v1/notepads/{id}
-       *
-       * ---
-       *
-       * **Path Parameters**
-       * ```ts
-       * type PathParameters = {
-       *   id: string
-       * }
-       * ```
-       *
-       * ---
-       *
-       * **Response**
-       * ```ts
-       * type Response = {
-       *   // A URL to the JSON Schema for this object.
-       *   $schema?: string
-       *   // 提示信息
-       *   message: string
-       * }
-       * ```
-       */
-      delete<
-        Config extends Alova2MethodConfig<MessageResponseBody> & {
-          pathParams: {
-            id: string;
-          };
-        }
-      >(
-        config: Config
-      ): Alova2Method<MessageResponseBody, 'notepad.delete', Config>;
       /**
        * ---
        *
@@ -1001,9 +988,9 @@ declare global {
       /**
        * ---
        *
-       * [PATCH] 更新记事板标签
+       * [POST] 删除记事板标签
        *
-       * **path:** /api/v1/notepads/{id}
+       * **path:** /api/v1/notepads/{id}/delete
        *
        * ---
        *
@@ -1016,52 +1003,25 @@ declare global {
        *
        * ---
        *
-       * **RequestBody**
-       * ```ts
-       * type RequestBody = {
-       *   // A URL to the JSON Schema for this object.
-       *   $schema?: string
-       *   // 内容
-       *   content?: string
-       *   // 标签页名称
-       *   name?: string
-       * }
-       * ```
-       *
-       * ---
-       *
        * **Response**
        * ```ts
        * type Response = {
        *   // A URL to the JSON Schema for this object.
        *   $schema?: string
-       *   // 响应对象
-       *   item: {
-       *     content: string
-       *     createdAt: string
-       *     deletedAt: {
-       *       Time: string
-       *       Valid: boolean
-       *     }
-       *     id: string
-       *     name: string
-       *     orderIndex: number
-       *     projectId: string | null
-       *     updatedAt: string
-       *   }
+       *   // 提示信息
+       *   message: string
        * }
        * ```
        */
-      update<
-        Config extends Alova2MethodConfig<ItemResponseNotePadTableBody> & {
+      delete<
+        Config extends Alova2MethodConfig<MessageResponseBody> & {
           pathParams: {
             id: string;
           };
-          data: UpdateNotePadBody;
         }
       >(
         config: Config
-      ): Alova2Method<ItemResponseNotePadTableBody, 'notepad.update', Config>;
+      ): Alova2Method<MessageResponseBody, 'notepad.delete', Config>;
       /**
        * ---
        *
@@ -1124,6 +1084,70 @@ declare global {
       >(
         config: Config
       ): Alova2Method<ItemResponseNotePadTableBody, 'notepad.move', Config>;
+      /**
+       * ---
+       *
+       * [POST] 更新记事板标签
+       *
+       * **path:** /api/v1/notepads/{id}/update
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **RequestBody**
+       * ```ts
+       * type RequestBody = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 内容
+       *   content?: string
+       *   // 标签页名称
+       *   name?: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应对象
+       *   item: {
+       *     content: string
+       *     createdAt: string
+       *     deletedAt: {
+       *       Time: string
+       *       Valid: boolean
+       *     }
+       *     id: string
+       *     name: string
+       *     orderIndex: number
+       *     projectId: string | null
+       *     updatedAt: string
+       *   }
+       * }
+       * ```
+       */
+      update<
+        Config extends Alova2MethodConfig<ItemResponseNotePadTableBody> & {
+          pathParams: {
+            id: string;
+          };
+          data: UpdateNotePadBody;
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemResponseNotePadTableBody, 'notepad.update', Config>;
     };
     project: {
       /**
@@ -1150,6 +1174,7 @@ declare global {
        *     defaultBranch: string | null
        *     deletedAt: string | null
        *     description: string | null
+       *     hidePath: boolean
        *     id: string
        *     lastSyncAt: string | null
        *     name: string
@@ -1169,7 +1194,7 @@ declare global {
        *
        * [POST] 创建项目
        *
-       * **path:** /api/v1/projects
+       * **path:** /api/v1/projects/create
        *
        * ---
        *
@@ -1180,6 +1205,8 @@ declare global {
        *   $schema?: string
        *   // 项目描述
        *   description: string
+       *   // �Ƿ�����·��
+       *   hidePath?: boolean
        *   // 项目名称
        *   name: string
        *   // 本地项目目录路径（可非 Git 仓库）
@@ -1202,6 +1229,7 @@ declare global {
        *     defaultBranch: string | null
        *     deletedAt: string | null
        *     description: string | null
+       *     hidePath: boolean
        *     id: string
        *     lastSyncAt: string | null
        *     name: string
@@ -1223,9 +1251,59 @@ declare global {
       /**
        * ---
        *
-       * [DELETE] 删除项目
+       * [GET] 获取项目详情
        *
        * **path:** /api/v1/projects/{id}
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应对象
+       *   item: {
+       *     createdAt: string
+       *     defaultBranch: string | null
+       *     deletedAt: string | null
+       *     description: string | null
+       *     hidePath: boolean
+       *     id: string
+       *     lastSyncAt: string | null
+       *     name: string
+       *     path: string
+       *     remoteUrl: string | null
+       *     updatedAt: string
+       *     worktreeBasePath: string | null
+       *   }
+       * }
+       * ```
+       */
+      getById<
+        Config extends Alova2MethodConfig<ItemResponseProjectBody> & {
+          pathParams: {
+            id: string;
+          };
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemResponseProjectBody, 'project.getById', Config>;
+      /**
+       * ---
+       *
+       * [POST] 删除项目
+       *
+       * **path:** /api/v1/projects/{id}/delete
        *
        * ---
        *
@@ -1260,9 +1338,9 @@ declare global {
       /**
        * ---
        *
-       * [GET] 获取项目详情
+       * [POST] �༭��Ŀ
        *
-       * **path:** /api/v1/projects/{id}
+       * **path:** /api/v1/projects/{id}/update
        *
        * ---
        *
@@ -1270,6 +1348,22 @@ declare global {
        * ```ts
        * type PathParameters = {
        *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **RequestBody**
+       * ```ts
+       * type RequestBody = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // ��Ŀ����
+       *   description: string
+       *   // �Ƿ�����·��
+       *   hidePath: boolean
+       *   // ��Ŀ����
+       *   name: string
        * }
        * ```
        *
@@ -1286,6 +1380,7 @@ declare global {
        *     defaultBranch: string | null
        *     deletedAt: string | null
        *     description: string | null
+       *     hidePath: boolean
        *     id: string
        *     lastSyncAt: string | null
        *     name: string
@@ -1297,15 +1392,16 @@ declare global {
        * }
        * ```
        */
-      getById<
+      update<
         Config extends Alova2MethodConfig<ItemResponseProjectBody> & {
           pathParams: {
             id: string;
           };
+          data: UpdateProjectInputBody;
         }
       >(
         config: Config
-      ): Alova2Method<ItemResponseProjectBody, 'project.getById', Config>;
+      ): Alova2Method<ItemResponseProjectBody, 'project.update', Config>;
     };
     branch: {
       /**
@@ -1373,7 +1469,7 @@ declare global {
        *
        * [POST] 创建分支
        *
-       * **path:** /api/v1/projects/{projectId}/branches
+       * **path:** /api/v1/projects/{projectId}/branches/create
        *
        * ---
        *
@@ -1425,7 +1521,7 @@ declare global {
       /**
        * ---
        *
-       * [DELETE] 删除分支
+       * [POST] 删除分支
        *
        * **path:** /api/v1/projects/{projectId}/branches/{branchName}
        *
@@ -1689,7 +1785,7 @@ declare global {
        *
        * [POST] 创建 Worktree
        *
-       * **path:** /api/v1/projects/{projectId}/worktrees
+       * **path:** /api/v1/projects/{projectId}/worktrees/create
        *
        * ---
        *
@@ -1760,7 +1856,7 @@ declare global {
       /**
        * ---
        *
-       * [DELETE] 删除 Worktree
+       * [POST] 删除 Worktree
        *
        * **path:** /api/v1/worktrees/{id}
        *
@@ -1999,6 +2095,7 @@ declare global {
        *         Valid: boolean
        *       }
        *       description: string
+       *       hidePath: boolean
        *       id: string
        *       lastSyncAt: string | null
        *       name: string
@@ -2037,6 +2134,7 @@ declare global {
        *           Valid: boolean
        *         }
        *         description: string
+       *         hidePath: boolean
        *         id: string
        *         lastSyncAt: string | null
        *         name: string
@@ -2088,7 +2186,7 @@ declare global {
        *
        * [POST] 创建任务
        *
-       * **path:** /api/v1/projects/{projectId}/tasks
+       * **path:** /api/v1/projects/{projectId}/tasks/create
        *
        * ---
        *
@@ -2155,6 +2253,7 @@ declare global {
        *         Valid: boolean
        *       }
        *       description: string
+       *       hidePath: boolean
        *       id: string
        *       lastSyncAt: string | null
        *       name: string
@@ -2193,6 +2292,7 @@ declare global {
        *           Valid: boolean
        *         }
        *         description: string
+       *         hidePath: boolean
        *         id: string
        *         lastSyncAt: string | null
        *         name: string
@@ -2226,43 +2326,6 @@ declare global {
       >(
         config: Config
       ): Alova2Method<ItemResponseTaskTableBody, 'task.create', Config>;
-      /**
-       * ---
-       *
-       * [DELETE] 删除任务
-       *
-       * **path:** /api/v1/tasks/{id}
-       *
-       * ---
-       *
-       * **Path Parameters**
-       * ```ts
-       * type PathParameters = {
-       *   id: string
-       * }
-       * ```
-       *
-       * ---
-       *
-       * **Response**
-       * ```ts
-       * type Response = {
-       *   // A URL to the JSON Schema for this object.
-       *   $schema?: string
-       *   // 提示信息
-       *   message: string
-       * }
-       * ```
-       */
-      delete<
-        Config extends Alova2MethodConfig<MessageResponseBody> & {
-          pathParams: {
-            id: string;
-          };
-        }
-      >(
-        config: Config
-      ): Alova2Method<MessageResponseBody, 'task.delete', Config>;
       /**
        * ---
        *
@@ -2307,6 +2370,7 @@ declare global {
        *         Valid: boolean
        *       }
        *       description: string
+       *       hidePath: boolean
        *       id: string
        *       lastSyncAt: string | null
        *       name: string
@@ -2345,6 +2409,7 @@ declare global {
        *           Valid: boolean
        *         }
        *         description: string
+       *         hidePath: boolean
        *         id: string
        *         lastSyncAt: string | null
        *         name: string
@@ -2377,143 +2442,6 @@ declare global {
       >(
         config: Config
       ): Alova2Method<ItemResponseTaskTableBody, 'task.getById', Config>;
-      /**
-       * ---
-       *
-       * [PATCH] 更新任务
-       *
-       * **path:** /api/v1/tasks/{id}
-       *
-       * ---
-       *
-       * **Path Parameters**
-       * ```ts
-       * type PathParameters = {
-       *   id: string
-       * }
-       * ```
-       *
-       * ---
-       *
-       * **RequestBody**
-       * ```ts
-       * type RequestBody = {
-       *   // A URL to the JSON Schema for this object.
-       *   $schema?: string
-       *   // 任务描述
-       *   description?: string
-       *   // 截止日期
-       *   dueDate?: string
-       *   // 优先级
-       *   priority?: number
-       *   // 标签
-       *   // [items] start
-       *   // [items] end
-       *   tags?: string[]
-       *   // 任务标题
-       *   title?: string
-       * }
-       * ```
-       *
-       * ---
-       *
-       * **Response**
-       * ```ts
-       * type Response = {
-       *   // A URL to the JSON Schema for this object.
-       *   $schema?: string
-       *   // 响应对象
-       *   item: {
-       *     completedAt: string | null
-       *     createdAt: string
-       *     deletedAt: {
-       *       Time: string
-       *       Valid: boolean
-       *     }
-       *     description: string
-       *     dueDate: string | null
-       *     id: string
-       *     orderIndex: number
-       *     priority: number
-       *     project?: {
-       *       createdAt: string
-       *       defaultBranch: string
-       *       deletedAt: {
-       *         Time: string
-       *         Valid: boolean
-       *       }
-       *       description: string
-       *       id: string
-       *       lastSyncAt: string | null
-       *       name: string
-       *       path: string
-       *       remoteUrl: string
-       *       updatedAt: string
-       *       worktreeBasePath: string
-       *     }
-       *     projectId: string
-       *     status: string
-       *     // [params1] start
-       *     // [items] start
-       *     // [items] end
-       *     // [params1] end
-       *     tags: string[] | null
-       *     title: string
-       *     updatedAt: string
-       *     worktree?: {
-       *       branchName: string
-       *       createdAt: string
-       *       deletedAt: {
-       *         Time: string
-       *         Valid: boolean
-       *       }
-       *       headCommit: string
-       *       headCommitDate: string | null
-       *       id: string
-       *       isBare: boolean
-       *       isMain: boolean
-       *       path: string
-       *       project?: {
-       *         createdAt: string
-       *         defaultBranch: string
-       *         deletedAt: {
-       *           Time: string
-       *           Valid: boolean
-       *         }
-       *         description: string
-       *         id: string
-       *         lastSyncAt: string | null
-       *         name: string
-       *         path: string
-       *         remoteUrl: string
-       *         updatedAt: string
-       *         worktreeBasePath: string
-       *       }
-       *       projectId: string
-       *       statusAhead: number
-       *       statusBehind: number
-       *       statusConflicts: number
-       *       statusModified: number
-       *       statusStaged: number
-       *       statusUntracked: number
-       *       statusUpdatedAt: string | null
-       *       updatedAt: string
-       *     }
-       *     worktreeId: string | null
-       *   }
-       * }
-       * ```
-       */
-      update<
-        Config extends Alova2MethodConfig<ItemResponseTaskTableBody> & {
-          pathParams: {
-            id: string;
-          };
-          data: UpdateTaskBody;
-        }
-      >(
-        config: Config
-      ): Alova2Method<ItemResponseTaskTableBody, 'task.update', Config>;
       /**
        * ---
        *
@@ -2570,6 +2498,7 @@ declare global {
        *         Valid: boolean
        *       }
        *       description: string
+       *       hidePath: boolean
        *       id: string
        *       lastSyncAt: string | null
        *       name: string
@@ -2608,6 +2537,7 @@ declare global {
        *           Valid: boolean
        *         }
        *         description: string
+       *         hidePath: boolean
        *         id: string
        *         lastSyncAt: string | null
        *         name: string
@@ -2641,6 +2571,43 @@ declare global {
       >(
         config: Config
       ): Alova2Method<ItemResponseTaskTableBody, 'task.bindWorktree', Config>;
+      /**
+       * ---
+       *
+       * [POST] 删除任务
+       *
+       * **path:** /api/v1/tasks/{id}/delete
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 提示信息
+       *   message: string
+       * }
+       * ```
+       */
+      delete<
+        Config extends Alova2MethodConfig<MessageResponseBody> & {
+          pathParams: {
+            id: string;
+          };
+        }
+      >(
+        config: Config
+      ): Alova2Method<MessageResponseBody, 'task.delete', Config>;
       /**
        * ---
        *
@@ -2701,6 +2668,7 @@ declare global {
        *         Valid: boolean
        *       }
        *       description: string
+       *       hidePath: boolean
        *       id: string
        *       lastSyncAt: string | null
        *       name: string
@@ -2739,6 +2707,7 @@ declare global {
        *           Valid: boolean
        *         }
        *         description: string
+       *         hidePath: boolean
        *         id: string
        *         lastSyncAt: string | null
        *         name: string
@@ -2772,6 +2741,145 @@ declare global {
       >(
         config: Config
       ): Alova2Method<ItemResponseTaskTableBody, 'task.move', Config>;
+      /**
+       * ---
+       *
+       * [POST] 更新任务
+       *
+       * **path:** /api/v1/tasks/{id}/update
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **RequestBody**
+       * ```ts
+       * type RequestBody = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 任务描述
+       *   description?: string
+       *   // 截止日期
+       *   dueDate?: string
+       *   // 优先级
+       *   priority?: number
+       *   // 标签
+       *   // [items] start
+       *   // [items] end
+       *   tags?: string[]
+       *   // 任务标题
+       *   title?: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应对象
+       *   item: {
+       *     completedAt: string | null
+       *     createdAt: string
+       *     deletedAt: {
+       *       Time: string
+       *       Valid: boolean
+       *     }
+       *     description: string
+       *     dueDate: string | null
+       *     id: string
+       *     orderIndex: number
+       *     priority: number
+       *     project?: {
+       *       createdAt: string
+       *       defaultBranch: string
+       *       deletedAt: {
+       *         Time: string
+       *         Valid: boolean
+       *       }
+       *       description: string
+       *       hidePath: boolean
+       *       id: string
+       *       lastSyncAt: string | null
+       *       name: string
+       *       path: string
+       *       remoteUrl: string
+       *       updatedAt: string
+       *       worktreeBasePath: string
+       *     }
+       *     projectId: string
+       *     status: string
+       *     // [params1] start
+       *     // [items] start
+       *     // [items] end
+       *     // [params1] end
+       *     tags: string[] | null
+       *     title: string
+       *     updatedAt: string
+       *     worktree?: {
+       *       branchName: string
+       *       createdAt: string
+       *       deletedAt: {
+       *         Time: string
+       *         Valid: boolean
+       *       }
+       *       headCommit: string
+       *       headCommitDate: string | null
+       *       id: string
+       *       isBare: boolean
+       *       isMain: boolean
+       *       path: string
+       *       project?: {
+       *         createdAt: string
+       *         defaultBranch: string
+       *         deletedAt: {
+       *           Time: string
+       *           Valid: boolean
+       *         }
+       *         description: string
+       *         hidePath: boolean
+       *         id: string
+       *         lastSyncAt: string | null
+       *         name: string
+       *         path: string
+       *         remoteUrl: string
+       *         updatedAt: string
+       *         worktreeBasePath: string
+       *       }
+       *       projectId: string
+       *       statusAhead: number
+       *       statusBehind: number
+       *       statusConflicts: number
+       *       statusModified: number
+       *       statusStaged: number
+       *       statusUntracked: number
+       *       statusUpdatedAt: string | null
+       *       updatedAt: string
+       *     }
+       *     worktreeId: string | null
+       *   }
+       * }
+       * ```
+       */
+      update<
+        Config extends Alova2MethodConfig<ItemResponseTaskTableBody> & {
+          pathParams: {
+            id: string;
+          };
+          data: UpdateTaskBody;
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemResponseTaskTableBody, 'task.update', Config>;
     };
     terminalSession: {
       /**
@@ -2832,9 +2940,9 @@ declare global {
       /**
        * ---
        *
-       * [DELETE] 关闭终端会话
+       * [POST] 关闭终端会话
        *
-       * **path:** /api/v1/projects/{projectId}/terminals/{sessionId}
+       * **path:** /api/v1/projects/{projectId}/terminals/{sessionId}/close
        *
        * ---
        *
@@ -2871,9 +2979,9 @@ declare global {
       /**
        * ---
        *
-       * [PATCH] 终端标签重命名
+       * [POST] 终端标签重命名
        *
-       * **path:** /api/v1/projects/{projectId}/terminals/{sessionId}
+       * **path:** /api/v1/projects/{projectId}/terminals/{sessionId}/rename
        *
        * ---
        *
@@ -3071,7 +3179,7 @@ declare global {
       /**
        * ---
        *
-       * [DELETE] 关闭 PTY 测试会话
+       * [POST] 关闭 PTY 测试会话
        *
        * **path:** /api/v1/pty-test/sessions/{sessionId}
        *
@@ -3188,7 +3296,7 @@ declare global {
       /**
        * ---
        *
-       * [DELETE] 删除评论
+       * [POST] 删除评论
        *
        * **path:** /api/v1/task-comments/{id}
        *
@@ -3278,6 +3386,7 @@ declare global {
        *           Valid: boolean
        *         }
        *         description: string
+       *         hidePath: boolean
        *         id: string
        *         lastSyncAt: string | null
        *         name: string
@@ -3316,6 +3425,7 @@ declare global {
        *             Valid: boolean
        *           }
        *           description: string
+       *           hidePath: boolean
        *           id: string
        *           lastSyncAt: string | null
        *           name: string
@@ -3356,7 +3466,7 @@ declare global {
        *
        * [POST] 新增评论
        *
-       * **path:** /api/v1/tasks/{id}/comments
+       * **path:** /api/v1/tasks/{id}/comments/create
        *
        * ---
        *
@@ -3415,6 +3525,7 @@ declare global {
        *           Valid: boolean
        *         }
        *         description: string
+       *         hidePath: boolean
        *         id: string
        *         lastSyncAt: string | null
        *         name: string
@@ -3453,6 +3564,7 @@ declare global {
        *             Valid: boolean
        *           }
        *           description: string
+       *           hidePath: boolean
        *           id: string
        *           lastSyncAt: string | null
        *           name: string
