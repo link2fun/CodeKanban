@@ -280,9 +280,14 @@ func (s *WorktreeService) RefreshWorktreeStatus(ctx context.Context, id string) 
 
 	now := time.Now()
 	var headPtr *string
+	var headDatePtr *time.Time
 	if status.LastCommit != nil {
 		head := status.LastCommit.SHA
 		headPtr = &head
+		if !status.LastCommit.Date.IsZero() {
+			headDate := status.LastCommit.Date.UTC()
+			headDatePtr = &headDate
+		}
 	}
 
 	aheadVal := int64(status.Ahead)
@@ -302,6 +307,7 @@ func (s *WorktreeService) RefreshWorktreeStatus(ctx context.Context, id string) 
 		StatusConflicts: &conflictsVal,
 		StatusUpdatedAt: &now,
 		HeadCommit:      headPtr,
+		HeadCommitDate:  headDatePtr,
 		Id:              worktree.Id,
 	})
 	if err != nil {

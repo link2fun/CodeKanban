@@ -21,6 +21,7 @@ INSERT INTO projects (
   default_branch,
   worktree_base_path,
   remote_url,
+  hide_path,
   last_sync_at
 ) VALUES (
   ?1,
@@ -32,8 +33,9 @@ INSERT INTO projects (
   CAST(?7 AS TEXT),
   ?8,
   ?9,
-  ?10
-) RETURNING id, created_at, updated_at, deleted_at, name, path, description, default_branch, worktree_base_path, remote_url, last_sync_at
+  ?10,
+  ?11
+) RETURNING id, created_at, updated_at, deleted_at, name, path, description, default_branch, worktree_base_path, remote_url, hide_path, last_sync_at
 `
 
 type ProjectCreateParams struct {
@@ -46,6 +48,7 @@ type ProjectCreateParams struct {
 	DefaultBranch    string     `db:"default_branch" json:"defaultBranch"`
 	WorktreeBasePath *string    `db:"worktree_base_path" json:"worktreeBasePath"`
 	RemoteUrl        *string    `db:"remote_url" json:"remoteUrl"`
+	HidePath         bool       `db:"hide_path" json:"hidePath"`
 	LastSyncAt       *time.Time `db:"last_sync_at" json:"lastSyncAt"`
 }
 
@@ -60,6 +63,7 @@ func (q *Queries) ProjectCreate(ctx context.Context, arg *ProjectCreateParams) (
 		arg.DefaultBranch,
 		arg.WorktreeBasePath,
 		arg.RemoteUrl,
+		arg.HidePath,
 		arg.LastSyncAt,
 	)
 	var i Project
@@ -74,13 +78,14 @@ func (q *Queries) ProjectCreate(ctx context.Context, arg *ProjectCreateParams) (
 		&i.DefaultBranch,
 		&i.WorktreeBasePath,
 		&i.RemoteUrl,
+		&i.HidePath,
 		&i.LastSyncAt,
 	)
 	return &i, err
 }
 
 const projectGetByID = `-- name: ProjectGetByID :one
-SELECT id, created_at, updated_at, deleted_at, name, path, description, default_branch, worktree_base_path, remote_url, last_sync_at FROM projects
+SELECT id, created_at, updated_at, deleted_at, name, path, description, default_branch, worktree_base_path, remote_url, hide_path, last_sync_at FROM projects
 WHERE id = ?1
   AND deleted_at IS NULL
 LIMIT 1
@@ -100,6 +105,7 @@ func (q *Queries) ProjectGetByID(ctx context.Context, id string) (*Project, erro
 		&i.DefaultBranch,
 		&i.WorktreeBasePath,
 		&i.RemoteUrl,
+		&i.HidePath,
 		&i.LastSyncAt,
 	)
 	return &i, err
@@ -117,6 +123,7 @@ SELECT
   default_branch,
   worktree_base_path,
   remote_url,
+  hide_path,
   last_sync_at
 FROM projects
 WHERE deleted_at IS NULL
@@ -143,6 +150,7 @@ func (q *Queries) ProjectList(ctx context.Context) ([]*Project, error) {
 			&i.DefaultBranch,
 			&i.WorktreeBasePath,
 			&i.RemoteUrl,
+			&i.HidePath,
 			&i.LastSyncAt,
 		); err != nil {
 			return nil, err
@@ -156,6 +164,52 @@ func (q *Queries) ProjectList(ctx context.Context) ([]*Project, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const projectUpdate = `-- name: ProjectUpdate :one
+UPDATE projects
+SET
+  updated_at = ?1,
+  name = ?2,
+  description = ?3,
+  hide_path = ?4
+WHERE id = ?5
+  AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, name, path, description, default_branch, worktree_base_path, remote_url, hide_path, last_sync_at
+`
+
+type ProjectUpdateParams struct {
+	UpdatedAt   time.Time `db:"updated_at" json:"updatedAt"`
+	Name        string    `db:"name" json:"name"`
+	Description *string   `db:"description" json:"description"`
+	HidePath    bool      `db:"hide_path" json:"hidePath"`
+	Id          string    `db:"id" json:"id"`
+}
+
+func (q *Queries) ProjectUpdate(ctx context.Context, arg *ProjectUpdateParams) (*Project, error) {
+	row := q.queryRow(ctx, q.projectUpdateStmt, projectUpdate,
+		arg.UpdatedAt,
+		arg.Name,
+		arg.Description,
+		arg.HidePath,
+		arg.Id,
+	)
+	var i Project
+	err := row.Scan(
+		&i.Id,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Name,
+		&i.Path,
+		&i.Description,
+		&i.DefaultBranch,
+		&i.WorktreeBasePath,
+		&i.RemoteUrl,
+		&i.HidePath,
+		&i.LastSyncAt,
+	)
+	return &i, err
 }
 
 const projectSoftDelete = `-- name: ProjectSoftDelete :execrows

@@ -87,8 +87,8 @@ var configStore = koanf.New(".")
 // ReadConfig 会加载 config.yaml，若不存在则写入默认配置。
 func ReadConfig() *AppConfig {
 	defaults := AppConfig{
-		ServeAt:             ":9005",
-		Domain:              "127.0.0.1:9005",
+		ServeAt:             ":3007",
+		Domain:              "127.0.0.1:3007",
 		RegisterOpen:        true,
 		WebUrl:              "/",
 		AttachmentSizeLimit: 8192,
@@ -113,7 +113,7 @@ func ReadConfig() *AppConfig {
 				Darwin:  "/bin/zsh",
 			},
 			IdleTimeout:           "0s",
-			MaxSessionsPerProject: 6,
+			MaxSessionsPerProject: 12,
 			AllowedRoots:          []string{},
 			Encoding:              "utf-8",
 			ScrollbackBytes:       262144,

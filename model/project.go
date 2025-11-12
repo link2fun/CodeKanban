@@ -35,6 +35,14 @@ type CreateProjectParams struct {
 	Path             string
 	Description      string
 	WorktreeBasePath string
+	HidePath         bool
+}
+
+// UpdateProjectParams contains inputs for editing project metadata.
+type UpdateProjectParams struct {
+	Name        string
+	Description string
+	HidePath    bool
 }
 
 // ProjectService wraps project level behaviours.
@@ -136,6 +144,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, params CreateProject
 		DefaultBranch:    defaultBranch,
 		WorktreeBasePath: worktreeBasePointer,
 		RemoteUrl:        remoteURLPtr,
+		HidePath:         params.HidePath,
 		LastSyncAt:       nil,
 	})
 	if err != nil {
@@ -208,6 +217,45 @@ func (s *ProjectService) DeleteProject(ctx context.Context, id string) error {
 		return ErrProjectNotFound
 	}
 	return nil
+}
+
+// UpdateProject modifies project metadata such as name and description.
+func (s *ProjectService) UpdateProject(ctx context.Context, id string, params UpdateProjectParams) (*Project, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	q, err := resolveQueries(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	name := strings.TrimSpace(params.Name)
+	if name == "" {
+		return nil, ErrInvalidProjectInput
+	}
+
+	description := strings.TrimSpace(params.Description)
+	var descriptionPtr *string
+	if description != "" {
+		descriptionPtr = &description
+	}
+
+	project, err := q.ProjectUpdate(ctx, &ProjectUpdateParams{
+		UpdatedAt:   time.Now(),
+		Name:        name,
+		Description: descriptionPtr,
+		HidePath:    params.HidePath,
+		Id:          id,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrProjectNotFound
+		}
+		return nil, err
+	}
+
+	return project, nil
 }
 
 func (s *ProjectService) dispatchWorktreeSync(ctx context.Context, projectID string, repo *git.GitRepo) {

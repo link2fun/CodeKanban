@@ -1,19 +1,39 @@
 <template>
   <div class="recent-projects">
     <div class="recent-projects-header">
-      <n-button text @click="handleBackToList">
-        <template #icon>
-          <n-icon size="20">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path
-                fill="currentColor"
-                d="M20 11H7.83l5.59-5.59L12 4l-8 8l8 8l1.41-1.41L7.83 13H20v-2z"
-              />
-            </svg>
-          </n-icon>
-        </template>
-        返回列表
-      </n-button>
+      <n-space justify="space-between" align="center" style="width: 100%">
+        <n-button text @click="handleBackToList">
+          <template #icon>
+            <n-icon size="20">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path
+                  fill="currentColor"
+                  d="M20 11H7.83l5.59-5.59L12 4l-8 8l8 8l1.41-1.41L7.83 13H20v-2z"
+                />
+              </svg>
+            </n-icon>
+          </template>
+          返回列表
+        </n-button>
+        <n-space>
+          <n-button text :disabled="!currentProject" @click="emit('editCurrent')">
+            <template #icon>
+              <n-icon size="20">
+                <CreateOutline />
+              </n-icon>
+            </template>
+            编辑
+          </n-button>
+          <n-button text @click="handleGoToSettings">
+            <template #icon>
+              <n-icon size="20">
+                <SettingsOutline />
+              </n-icon>
+            </template>
+            设置
+          </n-button>
+        </n-space>
+      </n-space>
     </div>
     <div v-if="recentProjects.length === 0" class="empty-state">
       <n-text depth="3">{{ loading ? '加载中...' : '暂无最近项目' }}</n-text>
@@ -29,7 +49,9 @@
         >
           <div class="project-info">
             <n-text class="project-name" strong>{{ project.name }}</n-text>
-            <n-text class="project-path" depth="3">{{ project.path }}</n-text>
+            <n-text v-if="!project.hidePath" class="project-path" depth="3">
+              {{ project.path }}
+            </n-text>
           </div>
           <n-icon v-if="project.id === currentProjectId" size="18" color="#18a058">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -49,7 +71,9 @@
 import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useProjectStore } from '@/stores/project';
+import { CreateOutline, SettingsOutline } from '@vicons/ionicons5';
 
+const emit = defineEmits<{ editCurrent: [] }>();
 const props = defineProps<{
   currentProjectId: string;
 }>();
@@ -58,6 +82,7 @@ const router = useRouter();
 const projectStore = useProjectStore();
 
 const loading = computed(() => projectStore.loading);
+const currentProject = computed(() => projectStore.currentProject);
 const recentProjects = computed(() => projectStore.recentProjects);
 
 const handleSelectProject = (projectId: string) => {
@@ -68,6 +93,10 @@ const handleSelectProject = (projectId: string) => {
 
 const handleBackToList = () => {
   router.push({ name: 'projects' });
+};
+
+const handleGoToSettings = () => {
+  router.push({ name: 'settings' });
 };
 
 onMounted(() => {

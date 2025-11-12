@@ -12,27 +12,31 @@
     <div class="resize-handle resize-handle-right" @mousedown="startResizeRight"></div>
 
     <div class="panel-header">
-      <n-tabs
-        v-model:value="activeId"
-        type="card"
-        :closable="true"
-        size="small"
-        @close="handleClose"
-      >
-        <n-tab-pane
-          v-for="tab in tabs"
-          :key="tab.id"
-          :name="tab.id"
-          :tab-props="createTabProps(tab)"
+      <div ref="tabsContainerRef" class="tabs-container">
+        <n-tabs
+          v-model:value="activeId"
+          type="card"
+          :closable="true"
+          size="small"
+          @close="handleClose"
         >
-          <template #tab>
-            <span class="tab-label">
-              <span class="status-dot" :class="tab.clientStatus" />
-              {{ tab.title }}
-            </span>
-          </template>
-        </n-tab-pane>
-      </n-tabs>
+          <n-tab-pane
+            v-for="tab in tabs"
+            :key="tab.id"
+            :name="tab.id"
+            :tab-props="createTabProps(tab)"
+          >
+            <template #tab>
+              <span class="tab-label" :title="tab.title">
+                <span v-if="!hideStatusDots" class="status-dot" :class="tab.clientStatus" />
+                <span class="tab-title" :style="tabTitleStyle">
+                  {{ tab.title }}
+                </span>
+              </span>
+            </template>
+          </n-tab-pane>
+        </n-tabs>
+      </div>
       <n-dropdown
         trigger="manual"
         placement="bottom-start"
@@ -44,9 +48,22 @@
         @clickoutside="contextMenuTab = null"
       />
       <div class="header-actions">
-        <n-checkbox v-model:checked="autoResize" size="small">
-          缩放时自动改变终端大小
-        </n-checkbox>
+        <n-dropdown
+          trigger="click"
+          placement="bottom-end"
+          :show="showSettingsMenu"
+          :options="settingsMenuOptions"
+          @select="handleSettingsMenuSelect"
+          @clickoutside="showSettingsMenu = false"
+        >
+          <n-button text size="small" @click="showSettingsMenu = !showSettingsMenu">
+            <template #icon>
+              <n-icon>
+                <SettingsOutline />
+              </n-icon>
+            </template>
+          </n-button>
+        </n-dropdown>
         <n-button text size="small" @click="toggleExpanded">
           <template #icon>
             <n-icon>
@@ -83,11 +100,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, ref, toRef, watch } from 'vue';
+import { computed, h, nextTick, ref, toRef, watch } from 'vue';
 import type { HTMLAttributes } from 'vue';
 import { useDialog, useMessage, NIcon, NInput } from 'naive-ui';
-import { useStorage, useThrottleFn } from '@vueuse/core';
-import { ChevronDownOutline, ChevronUpOutline, TerminalOutline, CopyOutline, CreateOutline } from '@vicons/ionicons5';
+import { useDebounceFn, useResizeObserver, useStorage } from '@vueuse/core';
+import { ChevronDownOutline, ChevronUpOutline, TerminalOutline, CopyOutline, CreateOutline, SettingsOutline, CheckmarkOutline } from '@vicons/ionicons5';
 import TerminalViewport from './TerminalViewport.vue';
 import { useTerminalClient, type TerminalCreateOptions, type TerminalTabState } from '@/composables/useTerminalClient';
 import type { DropdownOption } from 'naive-ui';
@@ -123,11 +140,26 @@ const contextMenuOptions = ref<DropdownOption[]>([
   },
 ]);
 
+// 设置菜单相关状态
+const showSettingsMenu = ref(false);
+const settingsMenuOptions = computed<DropdownOption[]>(() => [
+  {
+    label: '缩放时自动改变终端大小',
+    key: 'auto-resize',
+    icon: autoResize.value ? () => h(NIcon, null, { default: () => h(CheckmarkOutline) }) : undefined,
+  },
+]);
+
 const MIN_HEIGHT = 200;
 const MAX_HEIGHT = 800;
 const MIN_MARGIN = 12;
 const MAX_MARGIN_PERCENT = 0.4; // 最大边距占窗口宽度的40%
 const DUPLICATE_SUFFIX = ' 副本';
+const MAX_TAB_TITLE_WIDTH = 160;
+const TAB_LABEL_EXTRA_SPACE = 40;
+const TABS_CONTAINER_STATIC_OFFSET = 320;
+const TABS_CONTAINER_MIN_OFFSET = 200;
+const SHARED_WIDTH_HIDE_THRESHOLD = 1000;
 
 const {
   tabs,
@@ -142,6 +174,14 @@ const {
 } =
   useTerminalClient(projectIdRef);
 
+const tabsContainerRef = ref<HTMLElement | null>(null);
+const tabsContainerWidth = ref(0);
+const tabTitleMaxWidth = ref(MAX_TAB_TITLE_WIDTH);
+const hideStatusDots = ref(false);
+const tabTitleStyle = computed(() => ({
+  maxWidth: `${tabTitleMaxWidth.value}px`,
+}));
+
 const activeId = computed({
   get: () => activeTabId.value,
   set: value => {
@@ -155,26 +195,91 @@ const panelStyle = computed(() => ({
   right: `${panelRight.value}px`,
 }));
 
-// 节流的终端 resize 函数
-const throttledTerminalResize = useThrottleFn(() => {
-  if (autoResize.value && expanded.value && tabs.value.length > 0) {
-    emitter.emit('terminal-resize-all');
+function recalcTabTitleWidth(explicitWidth?: number) {
+  if (typeof explicitWidth === 'number') {
+    tabsContainerWidth.value = explicitWidth;
   }
-}, 100);
+  const containerWidth = typeof explicitWidth === 'number' ? explicitWidth : tabsContainerWidth.value;
+  if (!containerWidth) {
+    tabTitleMaxWidth.value = MAX_TAB_TITLE_WIDTH;
+    return;
+  }
+  const tabCount = Math.max(tabs.value.length, 1);
+  let activeOffset = TABS_CONTAINER_STATIC_OFFSET;
+  if (containerWidth - activeOffset < SHARED_WIDTH_HIDE_THRESHOLD) {
+    activeOffset = TABS_CONTAINER_MIN_OFFSET;
+  }
+  const availableWidth = Math.max(containerWidth - activeOffset, 0);
+  hideStatusDots.value = availableWidth < SHARED_WIDTH_HIDE_THRESHOLD;
+  const rawWidth = availableWidth / tabCount - TAB_LABEL_EXTRA_SPACE;
+  const constrainedWidth = Math.min(MAX_TAB_TITLE_WIDTH, Math.max(0, rawWidth));
+  tabTitleMaxWidth.value = Math.round(constrainedWidth);
+}
+
+useResizeObserver(tabsContainerRef, entries => {
+  const entry = entries[0];
+  if (!entry) {
+    return;
+  }
+  const width = entry.contentRect.width;
+  if (width !== tabsContainerWidth.value) {
+    recalcTabTitleWidth(width);
+  }
+});
+
+watch(
+  () => tabs.value.length,
+  () => {
+    nextTick(() => {
+      recalcTabTitleWidth();
+    });
+  },
+);
+
+watch(
+  () => expanded.value,
+  value => {
+    if (value) {
+      nextTick(() => {
+        recalcTabTitleWidth();
+      });
+    }
+  },
+);
+
+nextTick(() => {
+  recalcTabTitleWidth();
+});
+
+// 节流的终端 resize 函数
+const scheduleResizeAll = useDebounceFn(
+  () => {
+    if (autoResize.value && expanded.value && tabs.value.length > 0) {
+      emitter.emit('terminal-resize-all');
+    }
+  },
+  150,
+);
+
+const scheduleActiveTabResize = useDebounceFn(
+  (tabId: string) => {
+    if (autoResize.value && expanded.value && tabId) {
+      emitter.emit(`terminal-resize-${tabId}`);
+    }
+  },
+  150,
+);
 
 // 移除自动收缩逻辑，让用户手动控制展开/收缩状态
 // 这样切换项目时不会自动收缩面板
 
 // 监听面板高度变化，自动调整终端大小
 watch(
-  [panelHeight, expanded],
+  [panelHeight, panelLeft, panelRight, expanded],
   () => {
-    if (autoResize.value && expanded.value && tabs.value.length > 0) {
-      // 延迟一下，等待 DOM 更新
-      setTimeout(() => {
-        throttledTerminalResize();
-      }, 50);
-    }
+    nextTick(() => {
+      scheduleResizeAll();
+    });
   },
   { flush: 'post' },
 );
@@ -184,22 +289,24 @@ watch(
   activeId,
   (newId, oldId) => {
     console.log('[Terminal Panel] Tab switched:', { from: oldId, to: newId });
-    if (autoResize.value && expanded.value && newId) {
-      setTimeout(() => {
-        console.log('[Terminal Panel] Resizing active terminal only:', newId);
-        emitter.emit(`terminal-resize-${newId}`);
-      }, 50);
+    if (!newId) {
+      return;
     }
+    nextTick(() => {
+      console.log('[Terminal Panel] Queued resize for active terminal:', newId);
+      scheduleActiveTabResize(newId);
+    });
   },
+  { flush: 'post' },
 );
 
 function toggleExpanded() {
   expanded.value = !expanded.value;
   // 展开时触发 resize，确保终端尺寸正确
-  if (expanded.value && autoResize.value && tabs.value.length > 0) {
-    setTimeout(() => {
-      emitter.emit('terminal-resize-all');
-    }, 100);
+  if (expanded.value) {
+    nextTick(() => {
+      scheduleResizeAll();
+    });
   }
 }
 
@@ -220,9 +327,7 @@ function startResize(event: MouseEvent) {
     panelHeight.value = newHeight;
 
     // 拖动时实时调整终端大小（使用节流函数）
-    if (autoResize.value) {
-      throttledTerminalResize();
-    }
+    scheduleResizeAll();
   };
 
   const handleMouseUp = () => {
@@ -233,11 +338,7 @@ function startResize(event: MouseEvent) {
     document.body.style.userSelect = '';
 
     // 拖动结束后再调整一次，确保精确
-    if (autoResize.value && expanded.value && tabs.value.length > 0) {
-      setTimeout(() => {
-        emitter.emit('terminal-resize-all');
-      }, 50);
-    }
+    scheduleResizeAll();
   };
 
   document.addEventListener('mousemove', handleMouseMove);
@@ -265,9 +366,7 @@ function startResizeLeft(event: MouseEvent) {
     panelLeft.value = newLeft;
 
     // 拖动时实时调整终端大小（使用节流函数）
-    if (autoResize.value) {
-      throttledTerminalResize();
-    }
+    scheduleResizeAll();
   };
 
   const handleMouseUp = () => {
@@ -278,11 +377,7 @@ function startResizeLeft(event: MouseEvent) {
     document.body.style.userSelect = '';
 
     // 拖动结束后再调整一次，确保精确
-    if (autoResize.value && expanded.value && tabs.value.length > 0) {
-      setTimeout(() => {
-        emitter.emit('terminal-resize-all');
-      }, 50);
-    }
+    scheduleResizeAll();
   };
 
   document.addEventListener('mousemove', handleMouseMove);
@@ -310,9 +405,7 @@ function startResizeRight(event: MouseEvent) {
     panelRight.value = newRight;
 
     // 拖动时实时调整终端大小（使用节流函数）
-    if (autoResize.value) {
-      throttledTerminalResize();
-    }
+    scheduleResizeAll();
   };
 
   const handleMouseUp = () => {
@@ -323,11 +416,7 @@ function startResizeRight(event: MouseEvent) {
     document.body.style.userSelect = '';
 
     // 拖动结束后再调整一次，确保精确
-    if (autoResize.value && expanded.value && tabs.value.length > 0) {
-      setTimeout(() => {
-        emitter.emit('terminal-resize-all');
-      }, 50);
-    }
+    scheduleResizeAll();
   };
 
   document.addEventListener('mousemove', handleMouseMove);
@@ -347,7 +436,7 @@ async function openTerminal(options: TerminalCreateOptions) {
     // 创建成功后，等待面板展开动画完成（200ms）+ 缓冲时间，再触发 resize
     // 确保终端尺寸计算时容器已经是最终尺寸
     setTimeout(() => {
-      emitter.emit('terminal-resize-all');
+      scheduleResizeAll();
     }, 400);
   } catch (error: any) {
     message.error(error?.message ?? '终端创建失败');
@@ -465,6 +554,13 @@ function buildDuplicateTitle(rawTitle: string) {
   return `${baseCandidate} ${counter}`;
 }
 
+function handleSettingsMenuSelect(key: string) {
+  showSettingsMenu.value = false;
+  if (key === 'auto-resize') {
+    autoResize.value = !autoResize.value;
+  }
+}
+
 defineExpose({
   createTerminal: openTerminal,
   reloadSessions,
@@ -546,8 +642,9 @@ defineExpose({
 
 .panel-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 12px;
   padding: 6px 12px 0;
   flex-shrink: 0;
   background-color: var(--n-card-color, #fff);
@@ -556,12 +653,24 @@ defineExpose({
   position: relative;
 }
 
+.tabs-container {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  padding-right: 8px;
+}
+
+.tabs-container :deep(.n-tabs) {
+  width: 100%;
+}
+
 .header-actions {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
   padding-right: 4px;
+  margin-left: auto;
 }
 
 .panel-body {
@@ -574,6 +683,15 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  max-width: 100%;
+}
+
+.tab-title {
+  display: inline-block;
+  max-width: min(160px, 20vw);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .status-dot {
@@ -581,19 +699,23 @@ defineExpose({
   height: 8px;
   border-radius: 50%;
   display: inline-block;
-  background-color: var(--n-text-color-disabled);
+  background-color: var(--n-text-color-disabled, #c0c4d8);
+  box-shadow: 0 0 0 1px rgba(15, 17, 26, 0.08);
 }
 
 .status-dot.ready {
-  background-color: var(--n-color-success);
+  background-color: var(--kanban-terminal-status-ready, var(--n-color-success, #12b76a));
+  box-shadow: 0 0 0 1px rgba(18, 183, 106, 0.25);
 }
 
 .status-dot.connecting {
-  background-color: var(--n-color-warning);
+  background-color: var(--kanban-terminal-status-connecting, var(--n-color-warning, #f79009));
+  box-shadow: 0 0 0 1px rgba(247, 144, 9, 0.25);
 }
 
 .status-dot.error {
-  background-color: var(--n-color-error);
+  background-color: var(--kanban-terminal-status-error, var(--n-color-error, #f04438));
+  box-shadow: 0 0 0 1px rgba(240, 68, 56, 0.25);
 }
 
 .terminal-floating-button {

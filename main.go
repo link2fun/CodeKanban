@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/jessevdk/go-flags"
 	"go.uber.org/zap"
@@ -16,6 +17,8 @@ import (
 
 //go:embed all:static
 var embedStatic embed.FS
+
+var runningAsService bool
 
 //go:generate go run ./model/sqlc_gen/
 
@@ -62,6 +65,17 @@ func run(forceMigrate bool) {
 	defer model.DBClose()
 
 	logger.Info("服务启动中", zap.String("listen", cfg.ServeAt))
+
+	if !runningAsService {
+		if url := utils.BuildLaunchURL(cfg); url != "" {
+			go func(target string) {
+				time.Sleep(800 * time.Millisecond)
+				if err := utils.OpenBrowser(target); err != nil {
+					logger.Warn("自动打开浏览器失败", zap.String("url", target), zap.Error(err))
+				}
+			}(url)
+		}
+	}
 
 	ctx := utils.ContextWithLogger(context.Background(), logger)
 	if err := api.Init(ctx, cfg, embedStatic); err != nil {

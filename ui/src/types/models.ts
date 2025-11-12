@@ -2,10 +2,11 @@ export interface Project {
   id: string;
   name: string;
   path: string;
-  description: string;
-  defaultBranch: string;
-  worktreeBasePath: string;
-  remoteUrl: string;
+  description: string | null;
+  defaultBranch: string | null;
+  worktreeBasePath: string | null;
+  remoteUrl: string | null;
+  hidePath: boolean;
   createdAt: string;
   updatedAt: string;
 }

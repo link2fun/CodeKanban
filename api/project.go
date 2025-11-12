@@ -19,6 +19,16 @@ type createProjectInput struct {
 		Path             string  `json:"path" minLength:"1" doc:"本地项目目录路径（可非 Git 仓库）"`
 		Description      string  `json:"description" doc:"项目描述"`
 		WorktreeBasePath *string `json:"worktreeBasePath,omitempty" doc:"Worktree 基础路径（可选，默认为项目目录下的 worktrees 子目录）"`
+		HidePath         *bool   `json:"hidePath,omitempty" doc:"�Ƿ�����·��"`
+	}
+}
+
+type updateProjectInput struct {
+	ID   string `path:"id"`
+	Body struct {
+		Name        string `json:"name" minLength:"1" maxLength:"100" doc:"��Ŀ����"`
+		Description string `json:"description" doc:"��Ŀ����"`
+		HidePath    bool   `json:"hidePath" doc:"�Ƿ�����·��"`
 	}
 }
 
@@ -30,11 +40,17 @@ func registerProjectRoutes(group *huma.Group) {
 		if input.Body.WorktreeBasePath != nil {
 			worktreeBasePath = *input.Body.WorktreeBasePath
 		}
+		hidePath := false
+		if input.Body.HidePath != nil {
+			hidePath = *input.Body.HidePath
+		}
+
 		project, err := service.CreateProject(ctx, model.CreateProjectParams{
 			Name:             input.Body.Name,
 			Path:             input.Body.Path,
 			Description:      input.Body.Description,
 			WorktreeBasePath: worktreeBasePath,
+			HidePath:         hidePath,
 		})
 		if err != nil {
 			switch {
@@ -100,6 +116,34 @@ func registerProjectRoutes(group *huma.Group) {
 	}, func(op *huma.Operation) {
 		op.OperationID = "project-get-by-id"
 		op.Summary = "获取项目详情"
+		op.Tags = []string{projectTag}
+	})
+
+	huma.Patch(group, "/projects/{id}", func(ctx context.Context, input *updateProjectInput) (*h.ItemResponse[model.Project], error) {
+		project, err := service.UpdateProject(ctx, input.ID, model.UpdateProjectParams{
+			Name:        input.Body.Name,
+			Description: input.Body.Description,
+			HidePath:    input.Body.HidePath,
+		})
+		if err != nil {
+			switch {
+			case errors.Is(err, model.ErrDBNotInitialized):
+				return nil, huma.Error503ServiceUnavailable("database is not initialized")
+			case errors.Is(err, model.ErrInvalidProjectInput):
+				return nil, huma.Error400BadRequest(err.Error())
+			case errors.Is(err, model.ErrProjectNotFound):
+				return nil, huma.Error404NotFound("project not found")
+			default:
+				return nil, huma.Error500InternalServerError("failed to update project", err)
+			}
+		}
+
+		resp := h.NewItemResponse(*project)
+		resp.Status = http.StatusOK
+		return resp, nil
+	}, func(op *huma.Operation) {
+		op.OperationID = "project-update"
+		op.Summary = "�༭��Ŀ"
 		op.Tags = []string{projectTag}
 	})
 

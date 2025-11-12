@@ -62,6 +62,21 @@ export const useProjectStore = defineStore('project', () => {
     return project;
   }
 
+  async function updateProject(
+    id: string,
+    payload: { name: string; description?: string; hidePath: boolean },
+  ) {
+    const project = await projectApi.update(id, payload);
+    const index = projects.value.findIndex(item => item.id === id);
+    if (index !== -1) {
+      projects.value.splice(index, 1, project);
+    }
+    if (currentProject.value?.id === id) {
+      currentProject.value = project;
+    }
+    return project;
+  }
+
   async function deleteProject(id: string) {
     await projectApi.delete(id);
     projects.value = projects.value.filter(project => project.id !== id);
@@ -134,6 +149,7 @@ export const useProjectStore = defineStore('project', () => {
     fetchProjects,
     fetchProject,
     createProject,
+    updateProject,
     deleteProject,
     fetchWorktrees,
     createWorktree,

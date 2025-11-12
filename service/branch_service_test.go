@@ -37,7 +37,7 @@ func TestBranchServiceListMarksWorktrees(t *testing.T) {
 
 	found := false
 	for _, branch := range result.Local {
-		if branch.Name == project.DefaultBranch {
+		if branch.Name == defaultBranch(project) {
 			found = true
 			if !branch.HasWorktree {
 				t.Fatalf("expected default branch %s to be marked with worktree", branch.Name)
@@ -46,7 +46,7 @@ func TestBranchServiceListMarksWorktrees(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Fatalf("default branch %s not found in local list", project.DefaultBranch)
+		t.Fatalf("default branch %s not found in local list", defaultBranch(project))
 	}
 }
 
@@ -67,7 +67,7 @@ func TestBranchServiceDeleteProtected(t *testing.T) {
 	branchSvc := NewBranchService()
 	ctx := context.Background()
 
-	if err := branchSvc.DeleteBranch(ctx, project.Id, project.DefaultBranch, false); !errors.Is(err, model.ErrProtectedBranch) {
+	if err := branchSvc.DeleteBranch(ctx, project.Id, defaultBranch(project), false); !errors.Is(err, model.ErrProtectedBranch) {
 		t.Fatalf("expected ErrProtectedBranch deleting default branch, got %v", err)
 	}
 
@@ -82,13 +82,13 @@ func TestBranchServiceDeleteProtected(t *testing.T) {
 	if err := repo.CheckoutBranch("feature/protected"); err != nil {
 		t.Fatalf("checkout to feature/protected failed: %v", err)
 	}
-	defer repo.CheckoutBranch(project.DefaultBranch)
+	defer repo.CheckoutBranch(defaultBranch(project))
 
 	if err := branchSvc.DeleteBranch(ctx, project.Id, "feature/protected", false); !errors.Is(err, model.ErrProtectedBranch) {
 		t.Fatalf("expected ErrProtectedBranch deleting current branch, got %v", err)
 	}
 
-	if err := repo.CheckoutBranch(project.DefaultBranch); err != nil {
+	if err := repo.CheckoutBranch(defaultBranch(project)); err != nil {
 		t.Fatalf("checkout back to default failed: %v", err)
 	}
 }
@@ -191,7 +191,7 @@ func TestBranchServiceMergeSuccess(t *testing.T) {
 	}
 	runGitCommand(t, repoPath, "add", "merge.txt")
 	runGitCommand(t, repoPath, "commit", "-m", "add merge file")
-	runGitCommand(t, repoPath, "checkout", project.DefaultBranch)
+	runGitCommand(t, repoPath, "checkout", defaultBranch(project))
 
 	worktreeService := NewWorktreeService()
 	worktrees, err := worktreeService.ListWorktrees(ctx, project.Id)
@@ -200,7 +200,7 @@ func TestBranchServiceMergeSuccess(t *testing.T) {
 	}
 	var mainWT *model.Worktree
 	for _, wt := range worktrees {
-		if wt.BranchName == project.DefaultBranch {
+		if wt.BranchName == defaultBranch(project) {
 			mainWT = wt
 			break
 		}
@@ -253,7 +253,7 @@ func TestBranchServiceSquashMergeCommit(t *testing.T) {
 	}
 	runGitCommand(t, repoPath, "add", "squash.txt")
 	runGitCommand(t, repoPath, "commit", "-m", "add squash file")
-	runGitCommand(t, repoPath, "checkout", project.DefaultBranch)
+	runGitCommand(t, repoPath, "checkout", defaultBranch(project))
 
 	worktreeService := NewWorktreeService()
 	worktrees, err := worktreeService.ListWorktrees(ctx, project.Id)
@@ -262,7 +262,7 @@ func TestBranchServiceSquashMergeCommit(t *testing.T) {
 	}
 	var targetWT *model.Worktree
 	for _, wt := range worktrees {
-		if wt.BranchName == project.DefaultBranch {
+		if wt.BranchName == defaultBranch(project) {
 			targetWT = wt
 			break
 		}
@@ -299,4 +299,11 @@ func TestBranchServiceSquashMergeCommit(t *testing.T) {
 	if status.Staged != 0 || status.Modified != 0 {
 		t.Fatalf("expected clean worktree after commit, staged=%d modified=%d", status.Staged, status.Modified)
 	}
+}
+
+func defaultBranch(project *model.Project) string {
+	if project.DefaultBranch == nil {
+		return ""
+	}
+	return *project.DefaultBranch
 }

@@ -48,6 +48,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.projectListStmt, err = db.PrepareContext(ctx, projectList); err != nil {
 		return nil, fmt.Errorf("error preparing query ProjectList: %w", err)
 	}
+	if q.projectUpdateStmt, err = db.PrepareContext(ctx, projectUpdate); err != nil {
+		return nil, fmt.Errorf("error preparing query ProjectUpdate: %w", err)
+	}
 	if q.projectSoftDeleteStmt, err = db.PrepareContext(ctx, projectSoftDelete); err != nil {
 		return nil, fmt.Errorf("error preparing query ProjectSoftDelete: %w", err)
 	}
@@ -142,6 +145,11 @@ func (q *Queries) Close() error {
 	if q.projectListStmt != nil {
 		if cerr := q.projectListStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing projectListStmt: %w", cerr)
+		}
+	}
+	if q.projectUpdateStmt != nil {
+		if cerr := q.projectUpdateStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing projectUpdateStmt: %w", cerr)
 		}
 	}
 	if q.projectSoftDeleteStmt != nil {
@@ -276,6 +284,7 @@ type Queries struct {
 	projectCreateStmt                *sql.Stmt
 	projectGetByIDStmt               *sql.Stmt
 	projectListStmt                  *sql.Stmt
+	projectUpdateStmt                *sql.Stmt
 	projectSoftDeleteStmt            *sql.Stmt
 	taskCountByWorktreeStmt          *sql.Stmt
 	userCreateStmt                   *sql.Stmt
@@ -307,6 +316,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		projectCreateStmt:                q.projectCreateStmt,
 		projectGetByIDStmt:               q.projectGetByIDStmt,
 		projectListStmt:                  q.projectListStmt,
+		projectUpdateStmt:                q.projectUpdateStmt,
 		projectSoftDeleteStmt:            q.projectSoftDeleteStmt,
 		taskCountByWorktreeStmt:          q.taskCountByWorktreeStmt,
 		userCreateStmt:                   q.userCreateStmt,

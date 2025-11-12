@@ -34,6 +34,18 @@ export const projectApi = {
     return body.item;
   },
 
+  async update(
+    id: string,
+    data: { name: string; description?: string; hidePath: boolean },
+  ): Promise<Project> {
+    const body =
+      (await http.Patch<ItemResponse<Project>>(`/projects/${id}`, data).send()) ?? {};
+    if (!body.item) {
+      throw new Error('failed to update project');
+    }
+    return body.item;
+  },
+
   async delete(id: string): Promise<void> {
     await http.Delete(`/projects/${id}`).send();
   },

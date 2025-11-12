@@ -16,6 +16,7 @@ INSERT INTO projects (
   default_branch,
   worktree_base_path,
   remote_url,
+  hide_path,
   last_sync_at
 ) VALUES (
   @id,
@@ -27,6 +28,7 @@ INSERT INTO projects (
   CAST(@default_branch AS TEXT),
   @worktree_base_path,
   @remote_url,
+  @hide_path,
   @last_sync_at
 ) RETURNING *;
 
@@ -42,10 +44,22 @@ SELECT
   default_branch,
   worktree_base_path,
   remote_url,
+  hide_path,
   last_sync_at
 FROM projects
 WHERE deleted_at IS NULL
 ORDER BY created_at DESC;
+
+-- name: ProjectUpdate :one
+UPDATE projects
+SET
+  updated_at = @updated_at,
+  name = @name,
+  description = @description,
+  hide_path = @hide_path
+WHERE id = @id
+  AND deleted_at IS NULL
+RETURNING *;
 
 -- name: ProjectSoftDelete :execrows
 UPDATE projects

@@ -1,12 +1,46 @@
 <template>
   <n-card class="task-card" size="small" @click="emit('click')">
     <div class="task-card__header">
-      <n-ellipsis :line-clamp="2">
-        {{ task.title }}
-      </n-ellipsis>
-      <n-tag v-if="priorityLabel" size="tiny" :type="priorityType" :bordered="false">
-        {{ priorityLabel }}
-      </n-tag>
+      <div class="task-card__title">
+        <n-ellipsis :line-clamp="2">
+          {{ task.title }}
+        </n-ellipsis>
+        <n-tag v-if="priorityLabel" size="tiny" :type="priorityType" :bordered="false">
+          {{ priorityLabel }}
+        </n-tag>
+      </div>
+      <div class="task-card__actions">
+        <n-tooltip trigger="hover" placement="bottom">
+          <template #trigger>
+            <n-button quaternary circle size="tiny" @click.stop="handleCopy">
+              <n-icon size="14">
+                <CopyOutline />
+              </n-icon>
+            </n-button>
+          </template>
+          复制任务名
+        </n-tooltip>
+        <n-tooltip trigger="hover" placement="bottom">
+          <template #trigger>
+            <n-button quaternary circle size="tiny" @click.stop="handleEdit">
+              <n-icon size="14">
+                <CreateOutline />
+              </n-icon>
+            </n-button>
+          </template>
+          快捷编辑
+        </n-tooltip>
+        <n-tooltip trigger="hover" placement="bottom">
+          <template #trigger>
+            <n-button quaternary circle size="tiny" @click.stop="handleDelete">
+              <n-icon size="14">
+                <TrashOutline />
+              </n-icon>
+            </n-button>
+          </template>
+          快捷删除
+        </n-tooltip>
+      </div>
     </div>
 
     <div class="task-card__meta">
@@ -31,6 +65,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import dayjs from 'dayjs';
+import { CopyOutline, CreateOutline, TrashOutline } from '@vicons/ionicons5';
 import type { Task } from '@/types/models';
 
 const props = defineProps<{
@@ -39,6 +74,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   click: [];
+  edit: [];
+  delete: [];
+  copy: [];
 }>();
 
 const priorityMap: Record<number, { label: string; type: 'default' | 'info' | 'warning' | 'error' }> = {
@@ -59,6 +97,10 @@ const isOverdue = computed(() => {
 });
 
 const formatDate = (value: string) => dayjs(value).format('MM-DD');
+
+const handleEdit = () => emit('edit');
+const handleDelete = () => emit('delete');
+const handleCopy = () => emit('copy');
 </script>
 
 <style scoped>
@@ -78,6 +120,27 @@ const formatDate = (value: string) => dayjs(value).format('MM-DD');
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 8px;
+}
+
+.task-card__title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.task-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.task-card:hover .task-card__actions {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .task-card__meta {

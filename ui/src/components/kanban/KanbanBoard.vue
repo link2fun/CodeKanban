@@ -53,6 +53,9 @@
             :tasks="filteredTasksByStatus[column.key] ?? []"
             @task-moved="handleTaskMoved"
             @task-clicked="handleTaskClicked"
+            @task-edit="handleTaskEdit"
+            @task-delete="handleTaskDeleteRequest"
+            @task-copy="handleTaskCopy"
           />
         </div>
       </n-spin>
@@ -77,7 +80,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { useMessage } from 'naive-ui';
+import { useClipboard } from '@vueuse/core';
+import { useDialog, useMessage } from 'naive-ui';
 import { AddOutline } from '@vicons/ionicons5';
 import KanbanColumn from './KanbanColumn.vue';
 import TaskCreateDialog from './TaskCreateDialog.vue';
@@ -95,11 +99,14 @@ const props = defineProps<{
 const taskStore = useTaskStore();
 const projectStore = useProjectStore();
 const message = useMessage();
-const { listTasks, moveTask } = useTaskActions();
+const dialog = useDialog();
+const { copy: copyTaskTitle, isSupported: clipboardSupported } = useClipboard();
+const { listTasks, moveTask, deleteTask } = useTaskActions();
 
 const showCreateDialog = ref(false);
 const showDetailDrawer = ref(false);
 const boardLoading = ref(false);
+const deletingTaskId = ref<string | null>(null);
 
 const columns = [
   { key: 'todo', title: '待办' },
@@ -205,6 +212,48 @@ function handleTaskClicked(task: Task) {
   showDetailDrawer.value = true;
 }
 
+function handleTaskEdit(task: Task) {
+  handleTaskClicked(task);
+}
+
+function handleTaskDeleteRequest(task: Task) {
+  dialog.warning({
+    title: '删除任务',
+    content: `确认删除「${task.title}」？`,
+    positiveText: '删除',
+    negativeText: '取消',
+    onPositiveClick: () => performTaskDelete(task),
+  });
+}
+
+async function performTaskDelete(task: Task) {
+  if (deletingTaskId.value) {
+    return;
+  }
+  deletingTaskId.value = task.id;
+  try {
+    await deleteTask.send(task.id);
+    taskStore.removeTask(task.id);
+    message.success('任务已删除');
+  } catch (error: any) {
+    message.error(error?.message ?? '删除任务失败');
+  } finally {
+    deletingTaskId.value = null;
+  }
+}
+
+async function handleTaskCopy(task: Task) {
+  try {
+    if (!clipboardSupported.value) {
+      throw new Error('当前环境不支持复制');
+    }
+    await copyTaskTitle(task.title);
+    message.success('任务名称已复制');
+  } catch (error: any) {
+    message.error(error?.message ?? '复制任务名称失败');
+  }
+}
+
 function handleTaskCreated(task: Task) {
   taskStore.upsertTask(task);
 }
@@ -215,7 +264,7 @@ function handleTaskCreated(task: Task) {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: #ffffff;
+  background-color: var(--app-surface-color, #ffffff);
 }
 
 .board-header {

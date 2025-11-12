@@ -3,17 +3,15 @@
     <n-layout has-sider>
       <!-- 左侧最近项目侧边栏 -->
       <n-layout-sider bordered :width="240" :min-width="200" :max-width="400" resizable>
-        <RecentProjects :current-project-id="currentProjectId" />
+        <RecentProjects
+          :current-project-id="currentProjectId"
+          @edit-current="openProjectEditDialog"
+        />
       </n-layout-sider>
 
       <n-layout has-sider>
         <!-- 右侧工作树侧边栏 -->
-        <n-layout-sider
-          bordered
-          :width="320"
-          :collapsed-width="0"
-          show-trigger="arrow-circle"
-        >
+        <n-layout-sider bordered :width="320" :collapsed-width="0" show-trigger="arrow-circle">
           <WorktreeList @open-terminal="handleOpenTerminal" />
         </n-layout-sider>
 
@@ -28,6 +26,11 @@
 
     <!-- 悬浮终端面板 -->
     <TerminalPanel ref="terminalPanelRef" :project-id="currentProjectId" />
+    <ProjectEditDialog
+      v-model:show="showEditDialog"
+      :project="projectStore.currentProject"
+      @success="handleProjectUpdated"
+    />
   </div>
 </template>
 
@@ -40,14 +43,18 @@ import WorktreeList from '@/components/worktree/WorktreeList.vue';
 import KanbanBoard from '@/components/kanban/KanbanBoard.vue';
 import RecentProjects from '@/components/project/RecentProjects.vue';
 import TerminalPanel from '@/components/terminal/TerminalPanel.vue';
+import ProjectEditDialog from '@/components/project/ProjectEditDialog.vue';
 import type { Worktree } from '@/types/models';
 import { APP_NAME } from '@/constants/app';
 
 const route = useRoute();
 const projectStore = useProjectStore();
 const terminalPanelRef = ref<InstanceType<typeof TerminalPanel> | null>(null);
+const showEditDialog = ref(false);
 
-const currentProjectId = computed(() => (typeof route.params.id === 'string' ? route.params.id : ''));
+const currentProjectId = computed(() =>
+  typeof route.params.id === 'string' ? route.params.id : ''
+);
 
 const pageTitle = computed(() => {
   const projectName = projectStore.currentProject?.name;
@@ -76,7 +83,7 @@ watch(
     if (typeof newId === 'string') {
       loadProject(newId);
     }
-  },
+  }
 );
 
 // 监听路由变化，当从分支管理等页面返回到项目工作区时刷新 worktrees
@@ -88,7 +95,7 @@ watch(
     if (newName === 'project' && oldName === 'project-branches' && currentProjectId.value) {
       projectStore.fetchWorktrees(currentProjectId.value);
     }
-  },
+  }
 );
 
 watch(
@@ -101,7 +108,7 @@ watch(
       void terminalPanelRef.value?.reloadSessions();
     });
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 function handleOpenTerminal(worktree: Worktree) {
@@ -110,6 +117,16 @@ function handleOpenTerminal(worktree: Worktree) {
     workingDir: worktree.path,
     title: worktree.branchName,
   });
+}
+
+function openProjectEditDialog() {
+  showEditDialog.value = true;
+}
+
+async function handleProjectUpdated() {
+  if (currentProjectId.value) {
+    await projectStore.fetchProject(currentProjectId.value);
+  }
 }
 </script>
 
@@ -122,6 +139,6 @@ function handleOpenTerminal(worktree: Worktree) {
   padding: 24px;
   height: 100vh;
   overflow-y: auto;
-  background-color: #ffffff;
+  background-color: var(--app-surface-color, #ffffff);
 }
 </style>

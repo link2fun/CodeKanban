@@ -43,8 +43,8 @@ func TestProjectServiceCreateProject(t *testing.T) {
 		t.Fatalf("failed to reload project: %v", err)
 	}
 
-	if stored.DefaultBranch != "main" {
-		t.Fatalf("expected default branch main, got %q", stored.DefaultBranch)
+	if stored.DefaultBranch == nil || *stored.DefaultBranch != "main" {
+		t.Fatalf("expected default branch main, got %v", stored.DefaultBranch)
 	}
 
 	worktrees, err := q.WorktreeListByProject(ctx, project.Id)
@@ -90,7 +90,7 @@ func TestProjectServiceCreateProjectWithoutGitRepo(t *testing.T) {
 	if project.RemoteUrl != nil {
 		t.Fatalf("expected remote URL to be nil for non-git directory")
 	}
-	if strings.TrimSpace(project.DefaultBranch) == "" {
+	if project.DefaultBranch == nil || strings.TrimSpace(*project.DefaultBranch) == "" {
 		t.Fatalf("expected default branch to fallback to main")
 	}
 
@@ -111,6 +111,42 @@ func TestProjectServiceCreateProjectWithoutGitRepo(t *testing.T) {
 	}
 	if len(worktrees) != 0 {
 		t.Fatalf("expected no worktrees synced for non-git project")
+	}
+}
+
+func TestProjectServiceUpdateProject(t *testing.T) {
+	cleanup := initTestDB(t)
+	defer cleanup()
+
+	repoPath := createProjectTestRepo(t)
+	service := &ProjectService{}
+
+	ctx := context.Background()
+	project, err := service.CreateProject(ctx, CreateProjectParams{
+		Name:        "Sample",
+		Path:        repoPath,
+		Description: "initial",
+	})
+	if err != nil {
+		t.Fatalf("CreateProject returned error: %v", err)
+	}
+
+	updated, err := service.UpdateProject(ctx, project.Id, UpdateProjectParams{
+		Name:        "Renamed Project",
+		Description: "updated description",
+		HidePath:    true,
+	})
+	if err != nil {
+		t.Fatalf("UpdateProject returned error: %v", err)
+	}
+	if updated.Name != "Renamed Project" {
+		t.Fatalf("expected project name to update, got %s", updated.Name)
+	}
+	if updated.Description == nil || *updated.Description != "updated description" {
+		t.Fatalf("expected description to update")
+	}
+	if !updated.HidePath {
+		t.Fatalf("expected hidePath to be true")
 	}
 }
 

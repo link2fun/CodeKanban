@@ -344,7 +344,7 @@ onMounted(() => {
   transform: translateY(-50%);
   width: 28px;
   height: 56px;
-  background: #fafafa;
+  background: var(--app-surface-color, #fafafa);
   border: 1px solid #e0e0e0;
   border-right: none;
   border-radius: 6px 0 0 6px;
@@ -357,7 +357,7 @@ onMounted(() => {
 }
 
 .notepad-toggle:hover {
-  background: #f0f0f0;
+  background: var(--app-body-color, #f0f0f0);
 }
 
 .notepad-panel {
@@ -365,13 +365,13 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--app-surface-color, #ffffff);
 }
 
 .notepad-header {
   padding: 8px;
   border-bottom: 1px solid #e0e0e0;
-  background: #fafafa;
+  background: var(--app-body-color, #fafafa);
 }
 
 .scope-switcher {
@@ -384,7 +384,7 @@ onMounted(() => {
   flex: 1;
   padding: 8px;
   overflow-y: auto;
-  background: #ffffff;
+  background: var(--app-surface-color, #ffffff);
 }
 
 .tab-label {
@@ -397,7 +397,7 @@ onMounted(() => {
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
   font-size: 12px;
   line-height: 1.6;
-  background: #ffffff;
+  background: var(--app-surface-color, #ffffff);
 }
 
 :deep(.n-tabs .n-tabs-tab) {

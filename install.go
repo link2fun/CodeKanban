@@ -12,6 +12,7 @@ type program struct{}
 
 // Start 会由服务管理器回调，实际启动逻辑放到单独协程中避免阻塞。
 func (p *program) Start(s service.Service) error {
+	runningAsService = true
 	go func() {
 		run(false)
 	}()

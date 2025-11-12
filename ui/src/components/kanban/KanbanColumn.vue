@@ -15,7 +15,13 @@
         @change="handleChange"
       >
         <template #item="{ element }">
-          <TaskCard :task="element" @click="emit('task-clicked', element)" />
+          <TaskCard
+            :task="element"
+            @click="emit('task-clicked', element)"
+            @edit="emit('task-edit', element)"
+            @delete="emit('task-delete', element)"
+            @copy="emit('task-copy', element)"
+          />
         </template>
       </draggable>
     </div>
@@ -37,6 +43,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   'task-moved': [{ taskId: string; newStatus: Task['status']; newIndex: number; orderedTasks: Task[] }];
   'task-clicked': [Task];
+  'task-edit': [Task];
+  'task-delete': [Task];
+  'task-copy': [Task];
 }>();
 
 const localTasks = ref<Task[]>([]);
@@ -95,11 +104,17 @@ function handleChange(event: any) {
 
 .column-body {
   flex: 1;
-  overflow-y: auto;
   padding: 12px;
+  display: flex;
+  min-height: 0;
 }
 
 .task-list {
-  min-height: 80px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
 }
 </style>

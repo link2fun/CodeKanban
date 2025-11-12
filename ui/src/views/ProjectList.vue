@@ -11,6 +11,12 @@
       </template>
       <template #extra>
         <n-space>
+          <n-button quaternary @click="goToSettings">
+            <template #icon>
+              <n-icon><SettingsOutline /></n-icon>
+            </template>
+            总设置
+          </n-button>
           <n-button quaternary @click="goToPtyTest">
             <template #icon>
               <n-icon><TerminalOutline /></n-icon>
@@ -50,9 +56,11 @@
           </template>
 
           <n-space vertical size="small">
-            <n-text depth="3">
+            <n-text v-if="!project.hidePath" depth="3">
               <n-icon size="16"><FolderOutline /></n-icon>
-              <span class="path-text">{{ project.path }}</span>
+              <span class="path-text">
+                {{ project.path }}
+              </span>
             </n-text>
             <n-text v-if="project.description" depth="3">
               {{ project.description }}
@@ -71,11 +79,16 @@
     </n-spin>
 
     <ProjectCreateDialog v-model:show="showCreateDialog" @success="handleProjectCreated" />
+    <ProjectEditDialog
+      v-model:show="showEditDialog"
+      :project="editingProject"
+      @success="handleProjectUpdated"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDialog, useMessage, type DropdownOption } from 'naive-ui';
 import { useTitle } from '@vueuse/core';
@@ -85,9 +98,11 @@ import {
   FolderOpenOutline,
   FolderOutline,
   GitBranchOutline,
+  SettingsOutline,
   TerminalOutline,
 } from '@vicons/ionicons5';
 import ProjectCreateDialog from '@/components/project/ProjectCreateDialog.vue';
+import ProjectEditDialog from '@/components/project/ProjectEditDialog.vue';
 import { useProjectStore } from '@/stores/project';
 import type { Project } from '@/types/models';
 import { APP_NAME } from '@/constants/app';
@@ -99,13 +114,25 @@ const projectStore = useProjectStore();
 const message = useMessage();
 const dialog = useDialog();
 const showCreateDialog = ref(false);
+const showEditDialog = ref(false);
+const editingProject = ref<Project | null>(null);
 
 onMounted(() => {
   projectStore.fetchProjects();
 });
 
+watch(showEditDialog, value => {
+  if (!value) {
+    editingProject.value = null;
+  }
+});
+
 function goToProject(id: string) {
   router.push({ name: 'project', params: { id } });
+}
+
+function goToSettings() {
+  router.push({ name: 'settings' });
 }
 
 function goToPtyTest() {
@@ -117,6 +144,7 @@ type ProjectOption = DropdownOption & { project: Project };
 function getCardActions(project: Project): ProjectOption[] {
   return [
     { label: '打开', key: 'open', project } as ProjectOption,
+    { label: '�༭', key: 'edit', project } as ProjectOption,
     { label: '删除', key: 'delete', project } as ProjectOption,
   ];
 }
@@ -124,6 +152,8 @@ function getCardActions(project: Project): ProjectOption[] {
 function handleAction(action: string, project: Project) {
   if (action === 'open') {
     goToProject(project.id);
+  } else if (action === 'edit') {
+    openEditDialog(project);
   } else if (action === 'delete') {
     confirmDelete(project);
   }
@@ -132,6 +162,11 @@ function handleAction(action: string, project: Project) {
 function onCardSelect(key: string | number, option: DropdownOption) {
   const project = (option as ProjectOption).project;
   handleAction(String(key), project);
+}
+
+function openEditDialog(project: Project) {
+  editingProject.value = project;
+  showEditDialog.value = true;
 }
 
 function confirmDelete(project: Project) {
@@ -156,6 +191,10 @@ async function handleProjectCreated(project?: Project) {
   if (project) {
     goToProject(project.id);
   }
+}
+
+async function handleProjectUpdated() {
+  await projectStore.fetchProjects();
 }
 </script>
 

@@ -23,6 +23,11 @@ const router = createRouter({
       name: 'pty-test',
       component: () => import('@/views/PtyTest.vue'),
     },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('@/views/GeneralSettings.vue'),
+    },
   ],
 });
 
