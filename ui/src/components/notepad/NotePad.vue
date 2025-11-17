@@ -25,14 +25,14 @@
               :type="currentScope === 'global' ? 'primary' : 'default'"
               @click="switchScope('global')"
             >
-              全局
+              {{ t('notepad.global') }}
             </n-button>
             <n-button
               :type="currentScope === 'project' ? 'primary' : 'default'"
               :disabled="!currentProjectId"
               @click="switchScope('project')"
             >
-              项目
+              {{ t('notepad.project') }}
             </n-button>
           </n-button-group>
         </div>
@@ -61,7 +61,7 @@
                 <button
                   v-if="tabs.length > 1"
                   class="tab-close-btn"
-                  title="关闭标签"
+                  :title="t('notepad.closeTab')"
                   @click.stop="handleCloseTab(tab.id)"
                 >
                   <n-icon size="12">
@@ -84,7 +84,7 @@
           v-if="activeTab"
           v-model:value="activeTab.content"
           type="textarea"
-          placeholder="在这里记录你的想法..."
+          :placeholder="t('notepad.placeholder')"
           :autosize="{ minRows: 8, maxRows: 25 }"
           @update:value="handleContentChange"
         />
@@ -115,7 +115,9 @@ import type { NotePad } from '@/types/models';
 import { debounce } from '@/utils/debounce';
 import { useSettingsStore } from '@/stores/settings';
 import { usePanelStack } from '@/composables/usePanelStack';
+import { useLocale } from '@/composables/useLocale';
 
+const { t } = useLocale();
 const message = useMessage();
 const dialog = useDialog();
 const route = useRoute();
@@ -148,10 +150,10 @@ const isSavingNow = computed(() => activeSaveRequests.value > 0);
 const isWaitingToSave = computed(() => pendingSave.value && !isSavingNow.value);
 const saveStatusText = computed(() => {
   if (isSavingNow.value) {
-    return '正在保存...';
+    return t('notepad.saving');
   }
   if (isWaitingToSave.value) {
-    return '即将保存...';
+    return t('notepad.willSave');
   }
   return '';
 });
@@ -182,7 +184,7 @@ const toggleCollapse = () => {
 const handlePanelPointerDown = () => {
   bringNotepadToFront();
 };
-const shortcutTooltip = computed(() => `快捷键：${notepadShortcut.value.display || notepadShortcut.value.code}`);
+const shortcutTooltip = computed(() => t('notepad.shortcutLabel', { shortcut: notepadShortcut.value.display || notepadShortcut.value.code }));
 const shortcutCode = computed(() => notepadShortcut.value.code);
 
 if (typeof window !== 'undefined') {
@@ -282,7 +284,7 @@ const loadTabs = async () => {
       setActiveTab(tabs.value[0].id);
     }
   } catch (error) {
-    message.error('加载记事板失败');
+    message.error(t('notepad.loadFailed'));
     console.error(error);
   }
 };
@@ -292,7 +294,7 @@ const handleAddTab = async () => {
     const projectId =
       currentScope.value === 'project' && currentProjectId.value ? currentProjectId.value : undefined;
     const createData: { projectId?: string; name: string; content: string } = {
-      name: '新标签',
+      name: t('notepad.newTab'),
       content: '',
     };
     // 只有当 projectId 有值时才添加到请求中
@@ -303,7 +305,7 @@ const handleAddTab = async () => {
     tabs.value.push(newTab);
     setActiveTab(newTab.id);
   } catch (error) {
-    message.error('创建标签失败');
+    message.error(t('notepad.createFailed'));
     console.error(error);
   }
 };
@@ -319,7 +321,7 @@ const handleCloseTab = async (tabId: string) => {
       setActiveTab(tabs.value[0]?.id);
     }
   } catch (error) {
-    message.error('删除标签失败');
+    message.error(t('notepad.deleteFailed'));
     console.error(error);
   }
 };
@@ -328,17 +330,17 @@ const handleRenameTab = (tab: NotePad) => {
   let inputValue = tab.name;
 
   dialog.create({
-    title: '重命名标签',
+    title: t('notepad.renameTitle'),
     content: () =>
       h(NInput, {
         defaultValue: tab.name,
-        placeholder: '请输入标签名称',
+        placeholder: t('notepad.renamePlaceholder'),
         onUpdateValue: (value: string) => {
           inputValue = value;
         },
       }),
-    positiveText: '确定',
-    negativeText: '取消',
+    positiveText: t('common.confirm'),
+    negativeText: t('common.cancel'),
     onPositiveClick: async () => {
       const newName = inputValue.trim();
       if (newName && newName !== tab.name) {
@@ -349,7 +351,7 @@ const handleRenameTab = (tab: NotePad) => {
             tabs.value[index] = updated;
           }
         } catch (error) {
-          message.error('重命名失败');
+          message.error(t('notepad.renameFailed'));
           console.error(error);
         }
       }
@@ -421,7 +423,7 @@ const handleTabDragEnd = async ({ oldIndex, newIndex }: DragEndEvent) => {
       tabs.value[targetIndex] = updated;
     }
   } catch (error) {
-    message.error('移动标签失败');
+    message.error(t('notepad.moveFailed'));
     movedTab.orderIndex = previousOrderIndex;
     revertTabOrder(oldIndex, newIndex);
     console.error(error);
@@ -434,7 +436,7 @@ const saveContent = debounce(async (tabId: string, content: string) => {
   try {
     await notepadApi.update(tabId, { content });
   } catch (error) {
-    message.error('保存失败');
+    message.error(t('notepad.saveFailed'));
     console.error(error);
   } finally {
     activeSaveRequests.value = Math.max(0, activeSaveRequests.value - 1);

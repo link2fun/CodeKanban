@@ -6,33 +6,33 @@
     @update:show="emit('update:show', $event as boolean)"
     @after-leave="emit('closed')"
   >
-    <n-drawer-content title="任务详情">
+    <n-drawer-content :title="t('task.taskDetail')">
       <n-spin :show="detailLoading">
-        <n-empty v-if="!task" description="请选择一个任务" />
+        <n-empty v-if="!task" :description="t('task.pleaseSelectTask')" />
         <div v-else class="task-detail">
           <n-form label-placement="top" :model="form">
-            <n-form-item label="标题">
+            <n-form-item :label="t('task.fieldTitle')">
               <n-input v-model:value="form.title" />
             </n-form-item>
 
-            <n-form-item label="描述">
-              <n-input v-model:value="form.description" type="textarea" rows="5" placeholder="使用 Markdown 描述任务" />
+            <n-form-item :label="t('task.fieldDescription')">
+              <n-input v-model:value="form.description" type="textarea" rows="5" :placeholder="t('task.useMarkdown')" />
             </n-form-item>
 
-            <n-form-item label="优先级">
+            <n-form-item :label="t('task.fieldPriority')">
               <n-select v-model:value="form.priority" :options="priorityOptions" />
             </n-form-item>
 
-            <n-form-item label="关联分支">
+            <n-form-item :label="t('task.relatedBranch')">
               <n-select
                 v-model:value="form.worktreeId"
                 :options="worktreeOptions"
-                placeholder="可选"
+                :placeholder="t('task.optional')"
                 clearable
               />
             </n-form-item>
 
-            <n-form-item label="截止日期">
+            <n-form-item :label="t('task.dueDate')">
               <n-date-picker
                 v-model:formatted-value="form.dueDate"
                 type="date"
@@ -41,7 +41,7 @@
               />
             </n-form-item>
 
-            <n-form-item label="标签">
+            <n-form-item :label="t('task.tags')">
               <n-dynamic-tags v-model:value="form.tags" />
             </n-form-item>
           </n-form>
@@ -50,7 +50,7 @@
 
           <section>
             <div class="task-detail__section-header">
-              <h3>评论</h3>
+              <h3>{{ t('task.comments') }}</h3>
             </div>
 
             <n-space vertical size="small">
@@ -58,10 +58,10 @@
                 v-model:value="newComment"
                 type="textarea"
                 rows="3"
-                placeholder="输入评论内容"
+                :placeholder="t('task.commentPlaceholder')"
               />
               <n-button type="primary" size="small" :loading="commentLoading" @click="handleCreateComment">
-                发布评论
+                {{ t('task.publishComment') }}
               </n-button>
             </n-space>
 
@@ -73,22 +73,22 @@
                     <n-text depth="3">{{ formatDate(comment.createdAt) }}</n-text>
                   </div>
                   <n-button quaternary type="error" size="tiny" @click="handleDeleteComment(comment.id)">
-                    删除
+                    {{ t('task.deleteComment') }}
                   </n-button>
                 </n-space>
               </n-list-item>
             </n-list>
-            <n-empty v-else description="还没有评论" />
+            <n-empty v-else :description="t('task.noComments')" />
           </section>
         </div>
       </n-spin>
 
       <template #footer>
         <n-space justify="space-between" style="width: 100%">
-          <n-button tertiary @click="emit('update:show', false)">关闭</n-button>
+          <n-button tertiary @click="emit('update:show', false)">{{ t('common.close') }}</n-button>
           <n-space>
-            <n-button type="error" tertiary :loading="deleteLoading" @click="confirmDelete">删除任务</n-button>
-            <n-button type="primary" :loading="saveLoading" @click="handleSave">保存修改</n-button>
+            <n-button type="error" tertiary :loading="deleteLoading" @click="confirmDelete">{{ t('task.deleteTask') }}</n-button>
+            <n-button type="primary" :loading="saveLoading" @click="handleSave">{{ t('task.saveChanges') }}</n-button>
           </n-space>
         </n-space>
       </template>
@@ -105,6 +105,9 @@ import { useProjectStore } from '@/stores/project';
 import { useTaskActions } from '@/composables/useTaskActions';
 import { extractItem, extractItems } from '@/api/response';
 import type { Task, TaskComment } from '@/types/models';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps<{
   show: boolean;
@@ -160,12 +163,12 @@ const worktreeOptions = computed(() =>
   })),
 );
 
-const priorityOptions = [
-  { label: '普通', value: 0 },
-  { label: '低', value: 1 },
-  { label: '中', value: 2 },
-  { label: '高', value: 3 },
-];
+const priorityOptions = computed(() => [
+  { label: t('task.priority.normal'), value: 0 },
+  { label: t('task.priority.low'), value: 1 },
+  { label: t('task.priority.medium'), value: 2 },
+  { label: t('task.priority.high'), value: 3 },
+]);
 
 watch(
   () => task.value,
@@ -212,7 +215,7 @@ async function loadComments(taskId: string) {
     const items = extractItems(response) as unknown as TaskComment[];
     taskStore.setComments(taskId, items);
   } catch (error: any) {
-    message.error(error?.message ?? '加载评论失败');
+    message.error(error?.message ?? t('task.loadCommentsFailed'));
   } finally {
     detailLoading.value = false;
   }
@@ -243,9 +246,9 @@ async function handleSave() {
       taskStore.upsertTask(updated);
       originalWorktreeId.value = updated.worktreeId ?? null;
     }
-    message.success('任务已更新');
+    message.success(t('task.taskUpdated'));
   } catch (error: any) {
-    message.error(error?.message ?? '保存失败');
+    message.error(error?.message ?? t('task.saveFailed'));
   } finally {
     saveLoading.value = false;
   }
@@ -256,10 +259,10 @@ function confirmDelete() {
     return;
   }
   dialog.warning({
-    title: '删除任务',
-    content: '确定要删除该任务吗？操作不可恢复。',
-    positiveText: '删除',
-    negativeText: '取消',
+    title: t('task.deleteTask'),
+    content: t('task.deleteConfirm'),
+    positiveText: t('common.delete'),
+    negativeText: t('common.cancel'),
     onPositiveClick: handleDelete,
   });
 }
@@ -273,9 +276,9 @@ async function handleDelete() {
     await deleteTask.send(task.value.id);
     taskStore.removeTask(task.value.id);
     emit('update:show', false);
-    message.success('任务已删除');
+    message.success(t('task.taskDeleted'));
   } catch (error: any) {
-    message.error(error?.message ?? '删除失败');
+    message.error(error?.message ?? t('task.deleteTaskFailed'));
   } finally {
     deleteLoading.value = false;
   }
@@ -294,7 +297,7 @@ async function handleCreateComment() {
       newComment.value = '';
     }
   } catch (error: any) {
-    message.error(error?.message ?? '发表评论失败');
+    message.error(error?.message ?? t('task.publishCommentFailed'));
   } finally {
     commentLoading.value = false;
   }
@@ -308,7 +311,7 @@ async function handleDeleteComment(commentId: string) {
     await deleteCommentReq.send(commentId);
     taskStore.removeComment(task.value.id, commentId);
   } catch (error: any) {
-    message.error(error?.message ?? '删除评论失败');
+    message.error(error?.message ?? t('task.deleteCommentFailed'));
   }
 }
 

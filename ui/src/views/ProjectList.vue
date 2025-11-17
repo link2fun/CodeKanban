@@ -20,24 +20,25 @@
         </div>
       </template>
       <template #extra>
-        <n-space>
-          <n-button quaternary @click="goToSettings">
+        <n-space align="center">
+          <LanguageSwitcher />
+          <n-button quaternary size="small" @click="goToSettings">
             <template #icon>
               <n-icon><SettingsOutline /></n-icon>
             </template>
-            总设置
+            {{ t('nav.settings') }}
           </n-button>
-          <n-button quaternary @click="goToGuide">
+          <n-button quaternary size="small" @click="goToGuide">
             <template #icon>
               <n-icon><BookOutline /></n-icon>
             </template>
-            使用指引
+            {{ t('nav.guide') }}
           </n-button>
-          <n-button type="primary" @click="showCreateDialog = true">
+          <n-button type="primary" size="small" @click="showCreateDialog = true">
             <template #icon>
               <n-icon><AddOutline /></n-icon>
             </template>
-            添加项目
+            {{ t('project.addProject') }}
           </n-button>
         </n-space>
       </template>
@@ -99,7 +100,7 @@
         </n-card>
       </div>
       <div v-else class="empty-container">
-        <n-empty description="还没有任何项目，点击右上角创建一个吧" />
+        <n-empty :description="t('project.noProjects')" />
       </div>
     </n-spin>
 
@@ -129,14 +130,17 @@ import {
 } from '@vicons/ionicons5';
 import ProjectCreateDialog from '@/components/project/ProjectCreateDialog.vue';
 import ProjectEditDialog from '@/components/project/ProjectEditDialog.vue';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 import { useProjectStore } from '@/stores/project';
 import { useTerminalStore } from '@/stores/terminal';
 import { useAppStore } from '@/stores/app';
+import { useLocale } from '@/composables/useLocale';
 import type { Project } from '@/types/models';
 
 const appStore = useAppStore();
+const { t } = useLocale();
 
-useTitle(`项目列表 - ${appStore.appInfo.name}`);
+useTitle(`${t('project.title')} - ${appStore.appInfo.name}`);
 
 const router = useRouter();
 const projectStore = useProjectStore();
@@ -176,9 +180,9 @@ type ProjectOption = DropdownOption & { project: Project };
 
 function getCardActions(project: Project): ProjectOption[] {
   return [
-    { label: '打开', key: 'open', project } as ProjectOption,
-    { label: '编辑', key: 'edit', project } as ProjectOption,
-    { label: '删除', key: 'delete', project } as ProjectOption,
+    { label: t('project.openProject'), key: 'open', project } as ProjectOption,
+    { label: t('common.edit'), key: 'edit', project } as ProjectOption,
+    { label: t('common.delete'), key: 'delete', project } as ProjectOption,
   ];
 }
 
@@ -204,16 +208,16 @@ function openEditDialog(project: Project) {
 
 function confirmDelete(project: Project) {
   dialog.warning({
-    title: '确认删除',
-    content: `确定要删除项目 "${project.name}" 吗？`,
-    positiveText: '删除',
-    negativeText: '取消',
+    title: t('project.deleteProject'),
+    content: `${t('project.deleteConfirm')}: "${project.name}"?`,
+    positiveText: t('common.delete'),
+    negativeText: t('common.cancel'),
     onPositiveClick: async () => {
       try {
         await projectStore.deleteProject(project.id);
-        message.success('项目已删除');
+        message.success(t('message.deleteSuccess'));
       } catch (error: any) {
-        message.error(error?.message ?? '删除失败');
+        message.error(error?.message ?? t('message.deleteFailed'));
       }
     },
   });

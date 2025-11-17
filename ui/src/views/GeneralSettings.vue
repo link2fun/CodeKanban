@@ -6,66 +6,67 @@
           <n-icon size="24" style="display: flex;">
             <SettingsOutline />
           </n-icon>
-          <span style="line-height: 24px;">总设置</span>
+          <span style="line-height: 24px;">{{ t('settings.title') }}</span>
         </n-space>
       </template>
       <template #extra>
         <n-space align="center">
+          <LanguageSwitcher />
           <n-button tertiary @click="handleResetTheme">
             <template #icon>
               <n-icon>
                 <RefreshOutline />
               </n-icon>
             </template>
-            恢复默认主题
+            {{ t('settings.resetTheme') }}
           </n-button>
         </n-space>
       </template>
     </n-page-header>
 
     <n-space vertical size="large">
-      <n-card title="主题设置" size="huge">
+      <n-card :title="t('settings.themeSettings')" size="huge">
         <n-form label-placement="left" label-width="120">
-          <n-form-item label="主色调">
+          <n-form-item :label="t('settings.primaryColor')">
             <n-color-picker v-model:value="primaryColor" :modes="['hex']" :actions="['confirm']" />
           </n-form-item>
-          <n-form-item label="界面背景色">
+          <n-form-item :label="t('settings.bodyColor')">
             <n-color-picker v-model:value="bodyColor" :modes="['hex']" :actions="['confirm']" />
           </n-form-item>
-          <n-form-item label="卡片背景色">
+          <n-form-item :label="t('settings.surfaceColor')">
             <n-color-picker v-model:value="surfaceColor" :modes="['hex']" :actions="['confirm']" />
           </n-form-item>
         </n-form>
       </n-card>
 
 
-      <n-card title="项目与终端" size="huge">
+      <n-card :title="t('settings.projectAndTerminal')" size="huge">
         <n-form label-placement="left" label-width="160">
-          <n-form-item label="最近项目数量">
+          <n-form-item :label="t('settings.recentProjectsLimit')">
             <n-space vertical size="small">
               <n-input-number v-model:value="recentProjectsLimitValue" :min="1" :max="20" :step="1" />
-              <span class="form-tip">控制“最近项目”列表展示的数量</span>
+              <span class="form-tip">{{ t('settings.recentProjectsLimitTip') }}</span>
             </n-space>
           </n-form-item>
-          <n-form-item label="单项目终端上限">
+          <n-form-item :label="t('settings.terminalLimit')">
             <n-space vertical size="small">
               <n-input-number v-model:value="terminalLimitValue" :min="1" :max="24" :step="1" />
-              <span class="form-tip">限制每个项目可同时打开的终端标签数</span>
+              <span class="form-tip">{{ t('settings.terminalLimitTip') }}</span>
             </n-space>
           </n-form-item>
-          <n-form-item label="终端关闭确认">
+          <n-form-item :label="t('settings.confirmTerminalClose')">
             <n-space vertical size="small">
               <n-switch v-model:value="confirmTerminalCloseValue" />
-              <span class="form-tip">关闭终端前弹窗确认，避免误操作</span>
+              <span class="form-tip">{{ t('settings.confirmTerminalCloseTip') }}</span>
             </n-space>
           </n-form-item>
-          <n-form-item label="终端快捷键">
+          <n-form-item :label="t('settings.terminalShortcut')">
             <n-space vertical size="small">
               <n-input
                 :value="terminalShortcutValue"
                 readonly
                 :status="getShortcutStatus('terminal')"
-                placeholder="按“记录新按键”后按下目标按键"
+                :placeholder="t('settings.recordNewKey')"
               >
                 <template #suffix>
                   <span class="shortcut-hint">
@@ -75,7 +76,7 @@
               </n-input>
               <n-space>
                 <n-button size="small" @click="handleStartShortcutCapture('terminal')">
-                  {{ isCapturing('terminal') ? '正在记录...' : '记录新按键' }}
+                  {{ isCapturing('terminal') ? t('settings.recording') : t('settings.recordNewKey') }}
                 </n-button>
                 <n-button
                   size="small"
@@ -83,19 +84,19 @@
                   :disabled="isTerminalShortcutDefault"
                   @click="handleResetShortcut('terminal')"
                 >
-                  恢复默认
+                  {{ t('settings.restoreDefault') }}
                 </n-button>
               </n-space>
-              <span class="form-tip">用于展开/收起底部终端面板，默认 `</span>
+              <span class="form-tip">{{ t('settings.terminalShortcutTip') }}</span>
             </n-space>
           </n-form-item>
-          <n-form-item label="记事板快捷键">
+          <n-form-item :label="t('settings.notepadShortcut')">
             <n-space vertical size="small">
               <n-input
                 :value="notepadShortcutValue"
                 readonly
                 :status="getShortcutStatus('notepad')"
-                placeholder="按“记录新按键”后按下目标按键"
+                :placeholder="t('settings.recordNewKey')"
               >
                 <template #suffix>
                   <span class="shortcut-hint">
@@ -105,7 +106,7 @@
               </n-input>
               <n-space>
                 <n-button size="small" @click="handleStartShortcutCapture('notepad')">
-                  {{ isCapturing('notepad') ? '正在记录...' : '记录新按键' }}
+                  {{ isCapturing('notepad') ? t('settings.recording') : t('settings.recordNewKey') }}
                 </n-button>
                 <n-button
                   size="small"
@@ -113,52 +114,52 @@
                   :disabled="isNotepadShortcutDefault"
                   @click="handleResetShortcut('notepad')"
                 >
-                  恢复默认
+                  {{ t('settings.restoreDefault') }}
                 </n-button>
               </n-space>
-              <span class="form-tip">用于展开/收起右侧记事板，默认 1</span>
+              <span class="form-tip">{{ t('settings.notepadShortcutTip') }}</span>
             </n-space>
           </n-form-item>
-          <n-form-item label="默认编辑器">
+          <n-form-item :label="t('settings.defaultEditor')">
             <n-space vertical size="small">
               <n-select
                 v-model:value="defaultEditorValue"
                 :options="editorOptions"
                 style="max-width: 240px"
               />
-              <span class="form-tip">用于 Worktree 卡片的“打开编辑器”操作</span>
+              <span class="form-tip">{{ t('settings.defaultEditorTip') }}</span>
             </n-space>
           </n-form-item>
-          <n-form-item v-if="showCustomEditorInput" label="自定义命令">
+          <n-form-item v-if="showCustomEditorInput" :label="t('settings.customCommand')">
             <n-space vertical size="small">
               <n-input
                 v-model:value="customEditorCommandValue"
                 :placeholder="customCommandPlaceholder"
               />
               <span class="form-tip">
-                使用 <code>{{ '{' }}{{ '{' }}path{{ '}' }}{{ '}' }}</code> 表示 Worktree 路径；若未包含占位符会在命令末尾追加路径。
+                {{ t('settings.customCommandTip') }}
               </span>
             </n-space>
           </n-form-item>
         </n-form>
       </n-card>
 
-      <n-card title="实时预览" size="huge">
+      <n-card :title="t('settings.realtimePreview')" size="huge">
         <div class="preview-panel" :style="{ backgroundColor: surfaceColor }">
           <div class="preview-banner" :style="{ backgroundColor: primaryColor }">
             <n-space align="center" size="small">
               <n-icon size="24" color="#fff">
                 <ColorPaletteOutline />
               </n-icon>
-              <span>看看新主题的样子</span>
+              <span>{{ t('settings.previewTheme') }}</span>
             </n-space>
           </div>
           <div class="preview-content">
             <n-space vertical size="medium">
-              <n-button type="primary">主要按钮</n-button>
-              <n-tag type="primary" :bordered="false">主色标签</n-tag>
-              <n-alert type="info" title="提示">
-                主题色会实时保存，所有页面会立即生效。
+              <n-button type="primary">{{ t('common.save') }}</n-button>
+              <n-tag type="primary" :bordered="false">{{ t('settings.sampleCard') }}</n-tag>
+              <n-alert type="info" :title="t('common.info')">
+                {{ t('settings.sampleCardContent') }}
               </n-alert>
             </n-space>
           </div>
@@ -175,6 +176,8 @@ import { storeToRefs } from 'pinia';
 import { useTitle, useEventListener, useDebounceFn } from '@vueuse/core';
 import { useMessage } from 'naive-ui';
 import { ColorPaletteOutline, SettingsOutline, RefreshOutline } from '@vicons/ionicons5';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
+import { useLocale } from '@/composables/useLocale';
 import {
   useSettingsStore,
   DEFAULT_TERMINAL_SHORTCUT,
@@ -187,7 +190,9 @@ import { DEFAULT_EDITOR, EDITOR_OPTIONS, isEditorPreference } from '@/constants/
 
 type ShortcutTarget = 'terminal' | 'notepad';
 
-useTitle(`总设置 - ${APP_NAME}`);
+const { t } = useLocale();
+
+useTitle(`${t('settings.title')} - ${APP_NAME}`);
 
 const router = useRouter();
 const message = useMessage();
@@ -219,7 +224,7 @@ const surfaceColor = computed({
 });
 
 const editorOptions = EDITOR_OPTIONS;
-const customCommandPlaceholder = '例如：code --reuse-window {{path}}';
+const customCommandPlaceholder = computed(() => t('settings.customCommandPlaceholder'));
 
 const defaultEditorValue = computed<EditorPreference>({
   get: () => editorSettings.value.defaultEditor,
@@ -291,7 +296,7 @@ function handleStartShortcutCapture(target: ShortcutTarget) {
     return;
   }
   capturingTarget.value = target;
-  message.info(`请按下新的${targetLabel(target)}快捷键（Esc 取消）`);
+  message.info(t('settings.pressNewShortcut', { target: targetLabel(target) }));
 }
 
 function handleResetShortcut(target: ShortcutTarget) {
@@ -311,11 +316,11 @@ function getShortcutStatus(target: ShortcutTarget) {
 }
 
 function getShortcutHint(target: ShortcutTarget) {
-  return isCapturing(target) ? '等待输入… (Esc 取消)' : '单键、无 Ctrl/Alt';
+  return isCapturing(target) ? t('settings.waitingForInput') : t('settings.singleKeyNoModifier');
 }
 
 function targetLabel(target: ShortcutTarget) {
-  return target === 'terminal' ? '终端' : '记事板';
+  return target === 'terminal' ? t('settings.terminal') : t('settings.notepad');
 }
 
 if (typeof window !== 'undefined') {
@@ -331,7 +336,7 @@ if (typeof window !== 'undefined') {
     event.preventDefault();
     const shortcut = normalizeShortcutEvent(event);
     if (!shortcut) {
-      message.warning('暂不支持该按键，请选择其他按键');
+      message.warning(t('settings.keyNotSupported'));
       return;
     }
     if (capturingTarget.value === 'terminal') {

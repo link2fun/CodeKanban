@@ -8,9 +8,9 @@
         <n-ellipsis class="branch-name">
           {{ branch.name }}
         </n-ellipsis>
-        <n-tag v-if="mode === 'remote'" size="small" :bordered="false">远程</n-tag>
-        <n-tag v-if="isDefault" size="small" type="info" :bordered="false">默认</n-tag>
-        <n-tag v-if="branch.isCurrent" size="small" type="success" :bordered="false">当前</n-tag>
+        <n-tag v-if="mode === 'remote'" size="small" :bordered="false">{{ t('branch.remote') }}</n-tag>
+        <n-tag v-if="isDefault" size="small" type="info" :bordered="false">{{ t('branch.default') }}</n-tag>
+        <n-tag v-if="branch.isCurrent" size="small" type="success" :bordered="false">{{ t('branch.current') }}</n-tag>
         <n-tag v-if="branch.hasWorktree" size="small" type="warning" :bordered="false">Worktree</n-tag>
       </n-space>
       <n-dropdown
@@ -27,7 +27,7 @@
       </n-dropdown>
     </div>
     <div class="branch-card__meta">
-      <n-text depth="3">最新提交: {{ branch.headCommit || '—' }}</n-text>
+      <n-text depth="3">{{ t('branch.latestCommit') }}: {{ branch.headCommit || '—' }}</n-text>
     </div>
   </div>
 </template>
@@ -37,6 +37,9 @@ import { computed } from 'vue';
 import type { DropdownOption } from 'naive-ui';
 import { EllipsisHorizontalOutline, GitBranchOutline } from '@vicons/ionicons5';
 import type { BranchInfo } from '@/types/models';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps<{
   branch: BranchInfo;
@@ -59,17 +62,17 @@ const actionOptions = computed<DropdownOption[]>(() => {
   if (props.mode === 'local') {
     const options: DropdownOption[] = [];
     if (props.branch.hasWorktree) {
-      options.push({ label: '打开 Worktree', key: 'open-worktree' });
+      options.push({ label: t('branch.openWorktree'), key: 'open-worktree' });
     } else {
-      options.push({ label: '创建 Worktree', key: 'create-worktree' });
+      options.push({ label: t('branch.createWorktree'), key: 'create-worktree' });
     }
     options.push({
-      label: '删除分支',
+      label: t('branch.deleteBranch'),
       key: 'delete',
     });
     return options;
   }
-  return [{ label: '创建本地分支', key: 'checkout' }];
+  return [{ label: t('branch.createLocalBranch'), key: 'checkout' }];
 });
 
 function handleSelect(key: string | number) {

@@ -1,8 +1,8 @@
 <template>
   <div
     v-if="tabs.length"
-    v-show="expanded"
     class="terminal-panel"
+    :class="{ 'is-collapsed': !expanded }"
     :style="panelStyle"
     @pointerdown.capture="handlePanelPointerDown"
   >
@@ -70,13 +70,11 @@
             </template>
           </n-button>
         </n-dropdown>
-        <n-button text size="small" @click="toggleExpanded">
-          <template #icon>
-            <n-icon>
-              <component :is="expanded ? ChevronDownOutline : ChevronUpOutline" />
-            </n-icon>
-          </template>
-          {{ expanded ? '折叠' : '展开' }}
+        <n-button text size="small" class="toggle-button" @click="toggleExpanded">
+          <span>{{ expanded ? t('terminal.collapse') : t('terminal.expand') }}</span>
+          <n-icon class="toggle-icon" :class="{ 'is-expanded': expanded }">
+            <component :is="expanded ? ChevronDownOutline : ChevronUpOutline" />
+          </n-icon>
         </n-button>
       </div>
     </div>
@@ -101,8 +99,8 @@
     @pointerdown="handleFloatingButtonPointerDown"
     @click="toggleExpanded"
   >
-    <span class="floating-button-label">展开</span>
-    <n-icon :size="18">
+    <span class="floating-button-label">{{ t('terminal.expand') }}</span>
+    <n-icon :size="18" class="floating-button-icon">
       <TerminalOutline />
     </n-icon>
   </button>
@@ -121,6 +119,7 @@ import type { DropdownOption } from 'naive-ui';
 import { useSettingsStore } from '@/stores/settings';
 import Sortable, { type SortableEvent } from 'sortablejs';
 import { usePanelStack } from '@/composables/usePanelStack';
+import { useLocale } from '@/composables/useLocale';
 
 const props = defineProps<{
   projectId: string;
@@ -129,6 +128,7 @@ const props = defineProps<{
 const projectIdRef = toRef(props, 'projectId');
 const message = useMessage();
 const dialog = useDialog();
+const { t } = useLocale();
 const expanded = useStorage('terminal-panel-expanded', true);
 const panelHeight = useStorage('terminal-panel-height', 320);
 const panelLeft = useStorage('terminal-panel-left', 12);
@@ -141,14 +141,14 @@ const shouldAutoFocusTerminal = ref(true);
 const contextMenuTab = ref<string | null>(null);
 const contextMenuX = ref(0);
 const contextMenuY = ref(0);
-const contextMenuOptions = ref<DropdownOption[]>([
+const contextMenuOptions = computed<DropdownOption[]>(() => [
   {
-    label: '复制标签',
+    label: t('terminal.duplicateTab'),
     key: 'duplicate',
     icon: () => h(NIcon, null, { default: () => h(CopyOutline) }),
   },
   {
-    label: '重命名',
+    label: t('terminal.rename'),
     key: 'rename',
     icon: () => h(NIcon, null, { default: () => h(CreateOutline) }),
   },
@@ -158,12 +158,12 @@ const contextMenuOptions = ref<DropdownOption[]>([
 const showSettingsMenu = ref(false);
 const settingsMenuOptions = computed<DropdownOption[]>(() => [
   {
-    label: '缩放时自动改变终端大小',
+    label: t('terminal.autoResize'),
     key: 'auto-resize',
     icon: autoResize.value ? () => h(NIcon, null, { default: () => h(CheckmarkOutline) }) : undefined,
   },
   {
-    label: '关闭终端时需要确认',
+    label: t('terminal.confirmClose'),
     key: 'confirm-close',
     icon: confirmBeforeTerminalClose.value ? () => h(NIcon, null, { default: () => h(CheckmarkOutline) }) : undefined,
   },
@@ -173,7 +173,7 @@ const MIN_HEIGHT = 200;
 const MAX_HEIGHT = 800;
 const MIN_MARGIN = 12;
 const MAX_MARGIN_PERCENT = 0.4; // 最大边距占窗口宽度的40%
-const DUPLICATE_SUFFIX = ' 副本';
+const DUPLICATE_SUFFIX = computed(() => t('terminal.duplicateSuffix'));
 const MAX_TAB_TITLE_WIDTH = 160;
 const TAB_LABEL_EXTRA_SPACE = 40;
 const TABS_CONTAINER_STATIC_OFFSET = 320;
@@ -622,7 +622,7 @@ function startResizeRight(event: MouseEvent) {
 
 async function openTerminal(options: TerminalCreateOptions) {
   if (!props.projectId) {
-    message.warning('请先选择项目');
+    message.warning(t('terminal.pleaseSelectProject'));
     return;
   }
   if (!ensureTerminalCapacity()) {
@@ -638,7 +638,7 @@ async function openTerminal(options: TerminalCreateOptions) {
       scheduleResizeAll();
     }, 400);
   } catch (error: any) {
-    message.error(error?.message ?? '终端创建失败');
+    message.error(error?.message ?? t('terminal.createFailed'));
   }
 }
 
@@ -646,13 +646,13 @@ async function handleClose(sessionId: string) {
   // 如果开启了关闭确认，先弹出确认对话框
   if (confirmBeforeTerminalClose.value) {
     const tab = tabs.value.find(t => t.id === sessionId);
-    const tabTitle = tab?.title || '终端';
+    const tabTitle = tab?.title || t('terminal.defaultTerminalTitle');
 
     dialog.warning({
-      title: '确认关闭终端',
-      content: `确定要关闭"${tabTitle}"吗？`,
-      positiveText: '确认关闭',
-      negativeText: '取消',
+      title: t('terminal.confirmCloseTitle'),
+      content: t('terminal.confirmCloseContent', { title: tabTitle }),
+      positiveText: t('terminal.confirmCloseButton'),
+      negativeText: t('common.cancel'),
       onPositiveClick: async () => {
         await performClose(sessionId);
       },
@@ -665,9 +665,9 @@ async function handleClose(sessionId: string) {
 async function performClose(sessionId: string) {
   try {
     await closeSession(sessionId);
-    message.success('终端已关闭');
+    message.success(t('terminal.terminalClosed'));
   } catch (error: any) {
-    message.error(error?.message ?? '关闭终端失败');
+    message.error(error?.message ?? t('terminal.closeFailed'));
     disconnectTab(sessionId);
   }
 }
@@ -716,15 +716,15 @@ async function duplicateTab(tab: TerminalTabState) {
       rows: tab.rows > 0 ? tab.rows : undefined,
       cols: tab.cols > 0 ? tab.cols : undefined,
     });
-    message.success('已复制标签');
+    message.success(t('terminal.duplicateSuccess'));
   } catch (error: any) {
-    message.error(error?.message ?? '复制失败');
+    message.error(error?.message ?? t('terminal.duplicateFailed'));
   }
 }
 
 function ensureTerminalCapacity() {
   if (isTerminalLimitReached.value) {
-    message.warning('当前项目终端数量已达上限（' + terminalLimit.value + '），可在全局设置中调整。');
+    message.warning(t('terminal.limitReached', { limit: terminalLimit.value }));
     return false;
   }
   return true;
@@ -733,7 +733,7 @@ function ensureTerminalCapacity() {
 function promptRenameTab(tab: TerminalTabState) {
   const inputValue = ref(tab.title);
   dialog.create({
-    title: '重命名标签',
+    title: t('terminal.renameTitle'),
     content: () =>
       h(NInput, {
         value: inputValue.value,
@@ -742,17 +742,17 @@ function promptRenameTab(tab: TerminalTabState) {
         },
         maxlength: 64,
         autofocus: true,
-        placeholder: '请输入新的标签名',
+        placeholder: t('terminal.renamePlaceholder'),
       }),
-    positiveText: '保存',
-    negativeText: '取消',
+    positiveText: t('terminal.save'),
+    negativeText: t('common.cancel'),
     showIcon: false,
     maskClosable: false,
     closeOnEsc: true,
     onPositiveClick: async () => {
       const nextTitle = inputValue.value.trim();
       if (!nextTitle) {
-        message.warning('标签名称不能为空');
+        message.warning(t('terminal.emptyName'));
         return false;
       }
       if (nextTitle === tab.title) {
@@ -760,10 +760,10 @@ function promptRenameTab(tab: TerminalTabState) {
       }
       try {
         await renameSession(tab.id, nextTitle);
-        message.success('标签已更新');
+        message.success(t('terminal.renameSuccess'));
         return true;
       } catch (error: any) {
-        message.error(error?.message ?? '重命名失败');
+        message.error(error?.message ?? t('terminal.renameFailed'));
         return false;
       }
     },
@@ -771,8 +771,8 @@ function promptRenameTab(tab: TerminalTabState) {
 }
 
 function buildDuplicateTitle(rawTitle: string) {
-  const base = rawTitle.trim() || 'Terminal';
-  const baseCandidate = `${base}${DUPLICATE_SUFFIX}`;
+  const base = rawTitle.trim() || t('terminal.defaultTerminalTitle');
+  const baseCandidate = `${base}${DUPLICATE_SUFFIX.value}`;
   const titles = new Set(tabs.value.map(t => t.title));
   if (!titles.has(baseCandidate)) {
     return baseCandidate;
@@ -810,8 +810,21 @@ defineExpose({
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
-  transition: height 0.2s ease;
+  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s ease,
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+}
+
+.terminal-panel.is-collapsed {
+  height: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(20px);
+}
+
+.terminal-panel:not(.is-collapsed) {
+  animation: expandPanel 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .resize-handle {
@@ -987,21 +1000,60 @@ defineExpose({
   gap: 8px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
   font-size: 13px;
   font-weight: 600;
+  animation: fadeInUp 0.3s ease-out;
 }
 
-.terminal-floating-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
-}
-
-.terminal-floating-button:active {
-  transform: translateY(1px);
-}
 
 .floating-button-label {
   line-height: 1;
+}
+
+/* 折叠/展开按钮样式 */
+.toggle-button {
+  transition: none;
+}
+
+.toggle-icon {
+  transition: none;
+}
+
+/* 浮动按钮图标动画 */
+.floating-button-icon {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes expandPanel {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 </style>

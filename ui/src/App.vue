@@ -2,7 +2,8 @@
 import { computed, useCssVars, watchEffect } from 'vue';
 import { RouterView } from 'vue-router';
 import { storeToRefs } from 'pinia';
-import { zhCN, dateZhCN, type GlobalThemeOverrides } from 'naive-ui';
+import { zhCN, dateZhCN, enUS, dateEnUS, type GlobalThemeOverrides } from 'naive-ui';
+import { useI18n } from 'vue-i18n';
 import AppInitializer from '@/components/common/AppInitializer.vue';
 import NotePad from '@/components/notepad/NotePad.vue';
 import { useSettingsStore } from '@/stores/settings';
@@ -10,6 +11,12 @@ import { darkenColor, lightenColor } from '@/utils/color';
 
 const settingsStore = useSettingsStore();
 const { theme } = storeToRefs(settingsStore);
+
+const { locale } = useI18n();
+
+// 根据当前语言动态切换 Naive UI 的 locale
+const naiveLocale = computed(() => (locale.value === 'zh-CN' ? zhCN : enUS));
+const naiveDateLocale = computed(() => (locale.value === 'zh-CN' ? dateZhCN : dateEnUS));
 
 const themeOverrides = computed<GlobalThemeOverrides>(() => {
   const { primaryColor, bodyColor, surfaceColor } = theme.value;
@@ -54,7 +61,7 @@ watchEffect(() => {
 </script>
 
 <template>
-  <n-config-provider :locale="zhCN" :date-locale="dateZhCN" :theme-overrides="themeOverrides">
+  <n-config-provider :locale="naiveLocale" :date-locale="naiveDateLocale" :theme-overrides="themeOverrides">
     <n-loading-bar-provider>
       <n-dialog-provider>
         <n-notification-provider>

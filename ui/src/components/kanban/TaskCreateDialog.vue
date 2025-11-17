@@ -2,47 +2,47 @@
   <n-modal
     preset="card"
     class="task-create-dialog"
-    title="新建任务"
+    :title="t('task.newTask')"
     :show="show"
     @update:show="emit('update:show', $event as boolean)"
     :style="dialogStyle"
     :card-style="dialogCardStyle"
   >
     <n-form ref="formRef" :model="form" :rules="rules" label-width="80">
-      <n-form-item label="标题" path="title">
-        <n-input v-model:value="form.title" placeholder="请输入任务标题" />
+      <n-form-item :label="t('task.fieldTitle')" path="title">
+        <n-input v-model:value="form.title" :placeholder="t('task.titlePlaceholder')" />
       </n-form-item>
 
-      <n-form-item label="描述">
-        <n-input v-model:value="form.description" type="textarea" rows="4" placeholder="任务描述" />
+      <n-form-item :label="t('task.fieldDescription')">
+        <n-input v-model:value="form.description" type="textarea" rows="4" :placeholder="t('task.descriptionPlaceholder')" />
       </n-form-item>
 
-      <n-form-item label="优先级">
+      <n-form-item :label="t('task.fieldPriority')">
         <n-select v-model:value="form.priority" :options="priorityOptions" />
       </n-form-item>
 
-      <n-form-item label="关联分支">
+      <n-form-item :label="t('task.relatedBranch')">
         <n-select
           v-model:value="form.worktreeId"
           :options="worktreeOptions"
-          placeholder="可选"
+          :placeholder="t('task.optional')"
           clearable
         />
       </n-form-item>
 
-      <n-form-item label="截止日期">
+      <n-form-item :label="t('task.dueDate')">
         <n-date-picker v-model:formatted-value="form.dueDate" value-format="yyyy-MM-dd" type="date" clearable />
       </n-form-item>
 
-      <n-form-item label="标签">
+      <n-form-item :label="t('task.tags')">
         <n-dynamic-tags v-model:value="form.tags" />
       </n-form-item>
     </n-form>
 
     <template #footer>
       <n-space justify="end">
-        <n-button @click="emit('update:show', false)">取消</n-button>
-        <n-button type="primary" :loading="createLoading" @click="handleSubmit">创建</n-button>
+        <n-button @click="emit('update:show', false)">{{ t('common.cancel') }}</n-button>
+        <n-button type="primary" :loading="createLoading" @click="handleSubmit">{{ t('common.create') }}</n-button>
       </n-space>
     </template>
   </n-modal>
@@ -55,6 +55,9 @@ import { useProjectStore } from '@/stores/project';
 import { useTaskActions } from '@/composables/useTaskActions';
 import { extractItem } from '@/api/response';
 import type { Task } from '@/types/models';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps<{
   show: boolean;
@@ -83,14 +86,14 @@ const form = ref({
 });
 
 const rules: FormRules = {
-  title: [{ required: true, message: '请输入任务标题', trigger: 'blur' }],
+  title: [{ required: true, message: t('validation.taskTitleRequired'), trigger: 'blur' }],
 };
 
 const priorityOptions = [
-  { label: '普通', value: 0 },
-  { label: '低', value: 1 },
-  { label: '中', value: 2 },
-  { label: '高', value: 3 },
+  { label: t('task.priority.normal'), value: 0 },
+  { label: t('task.priority.low'), value: 1 },
+  { label: t('task.priority.medium'), value: 2 },
+  { label: t('task.priority.high'), value: 3 },
 ];
 
 const worktreeOptions = computed(() =>
@@ -134,7 +137,7 @@ async function handleSubmit() {
   }
 
   if (!props.projectId) {
-    message.error('缺少项目 ID');
+    message.error(t('task.missingProjectId'));
     return;
   }
 
@@ -151,12 +154,12 @@ async function handleSubmit() {
     const task = extractItem(response) as unknown as Task | undefined;
     if (task) {
       emit('created', task);
-      message.success('任务创建成功');
+      message.success(t('message.taskCreated'));
       emit('update:show', false);
       resetForm();
     }
   } catch (error: any) {
-    message.error(error?.message ?? '创建任务失败');
+    message.error(error?.message ?? t('message.taskCreateFailed'));
   }
 }
 

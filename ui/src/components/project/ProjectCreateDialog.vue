@@ -2,39 +2,39 @@
   <n-modal
     v-model:show="visible"
     preset="dialog"
-    title="创建项目"
-    positive-text="创建"
-    negative-text="取消"
+    :title="t('project.createProject')"
+    :positive-text="t('common.create')"
+    :negative-text="t('common.cancel')"
     :loading="loading"
     @positive-click="handleCreate"
   >
     <n-form ref="formRef" :model="formData" :rules="rules" label-placement="top">
-      <n-form-item label="项目名称" path="name">
-        <n-input v-model:value="formData.name" placeholder="输入项目名称" />
+      <n-form-item :label="t('project.projectName')" path="name">
+        <n-input v-model:value="formData.name" :placeholder="t('project.namePlaceholder')" />
       </n-form-item>
-      <n-form-item label="项目目录" path="path">
+      <n-form-item :label="t('project.projectDirectory')" path="path">
         <n-input
           v-model:value="formData.path"
-          placeholder="选择或输入本地项目目录，例如 C:\\Projects\\demo"
+          :placeholder="t('project.pathPlaceholder')"
         />
         <template #feedback>
           <n-text depth="3">
-            可以直接选择任意本地文件夹；若目录中没有 .git，将无法使用分支与 Worktree 功能。
+            {{ t('project.pathHint') }}
           </n-text>
         </template>
       </n-form-item>
-      <n-form-item label="项目描述" path="description">
+      <n-form-item :label="t('project.projectDescription')" path="description">
         <n-input
           v-model:value="formData.description"
           type="textarea"
           :rows="3"
-          placeholder="输入项目描述（可选）"
+          :placeholder="t('project.descriptionPlaceholder')"
         />
       </n-form-item>
-      <n-form-item label="隐藏路径" path="hidePath">
+      <n-form-item :label="t('project.hidePath')" path="hidePath">
         <n-space align="center">
           <n-switch v-model:value="formData.hidePath" />
-          <n-text depth="3">开启后，项目列表与侧边栏中将不再展示绝对路径。</n-text>
+          <n-text depth="3">{{ t('project.hidePathHint') }}</n-text>
         </n-space>
       </n-form-item>
     </n-form>
@@ -46,6 +46,9 @@ import { computed, ref, watch } from 'vue';
 import { useMessage, type FormInst, type FormRules } from 'naive-ui';
 import { useProjectStore } from '@/stores/project';
 import type { Project } from '@/types/models';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps<{
   show: boolean;
@@ -74,8 +77,8 @@ const formData = ref({
 });
 
 const rules: FormRules = {
-  name: [{ required: true, message: '请输入项目名称', trigger: ['blur', 'input'] }],
-  path: [{ required: true, message: '请输入项目目录', trigger: ['blur', 'input'] }],
+  name: [{ required: true, message: t('validation.projectNameRequired'), trigger: ['blur', 'input'] }],
+  path: [{ required: true, message: t('validation.projectPathRequired'), trigger: ['blur', 'input'] }],
 };
 
 watch(visible, newVal => {
@@ -89,7 +92,7 @@ async function handleCreate() {
     await formRef.value?.validate();
     loading.value = true;
     const project = await projectStore.createProject(formData.value);
-    message.success('项目创建成功');
+    message.success(t('message.projectCreated'));
     visible.value = false;
     emit('success', project);
   } catch (error: any) {

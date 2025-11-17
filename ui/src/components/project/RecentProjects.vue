@@ -13,7 +13,7 @@
               </svg>
             </n-icon>
           </template>
-          返回列表
+          {{ t('common.backToList') }}
         </n-button>
         <n-space>
           <n-button text :disabled="!currentProject" @click="emit('editCurrent')">
@@ -22,7 +22,7 @@
                 <CreateOutline />
               </n-icon>
             </template>
-            编辑
+            {{ t('common.edit') }}
           </n-button>
           <n-button text @click="handleGoToSettings">
             <template #icon>
@@ -30,13 +30,13 @@
                 <SettingsOutline />
               </n-icon>
             </template>
-            设置
+            {{ t('nav.settings') }}
           </n-button>
         </n-space>
       </n-space>
     </div>
     <div v-if="recentProjects.length === 0" class="empty-state">
-      <n-text depth="3">{{ loading ? '加载中...' : '暂无最近项目' }}</n-text>
+      <n-text depth="3">{{ loading ? t('common.loading') : t('common.noRecentProjects') }}</n-text>
     </div>
     <div v-else class="projects-list">
       <TransitionGroup name="project-list" tag="div">
@@ -102,6 +102,9 @@ import { useProjectStore } from '@/stores/project';
 import { useTerminalStore } from '@/stores/terminal';
 import { useAppStore } from '@/stores/app';
 import { CreateOutline, SettingsOutline, TerminalOutline } from '@vicons/ionicons5';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const emit = defineEmits<{ editCurrent: []; toggleTerminal: [] }>();
 const props = defineProps<{

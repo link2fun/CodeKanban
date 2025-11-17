@@ -11,7 +11,7 @@
           <n-ellipsis style="max-width: 160px">
             {{ worktree.branchName }}
           </n-ellipsis>
-          <n-tag v-if="worktree.isMain" size="small" round type="info">默认</n-tag>
+          <n-tag v-if="worktree.isMain" size="small" round type="info">{{ t('worktree.default') }}</n-tag>
         </n-space>
         <n-space align="center" :size="0" class="worktree-card__actions-header">
           <n-button-group size="tiny">
@@ -21,7 +21,7 @@
                   <n-icon :size="14"><CodeSlashOutline /></n-icon>
                 </n-button>
               </template>
-              使用 {{ defaultEditorLabel }} 打开
+              {{ t('worktree.openWith', { editor: defaultEditorLabel }) }}
             </n-tooltip>
             <n-dropdown :options="editorDropdownOptions" @select="handleEditorSelect">
               <n-button text size="tiny" @click.stop class="action-button">
@@ -36,7 +36,7 @@
               </n-button>
             </template>
             <div>
-              <div>刷新状态</div>
+              <div>{{ t('worktree.refreshStatus') }}</div>
               <div style="font-size: 12px; opacity: 0.7;">
                 {{ formatRefreshTime(worktree.statusUpdatedAt) }}
               </div>
@@ -48,7 +48,7 @@
                 <n-icon :size="14"><Terminal /></n-icon>
               </n-button>
             </template>
-            打开终端
+            {{ t('worktree.openTerminal') }}
           </n-tooltip>
           <n-dropdown :options="actions" @select="handleAction">
             <n-button text size="tiny" @click.stop class="action-button">
@@ -63,7 +63,7 @@
       <GitStatusBadge :worktree="worktree" />
 
       <n-text depth="3" class="meta-text">
-        {{ worktree.headCommit || '无提交信息' }}
+        {{ worktree.headCommit || t('worktree.noCommitInfo') }}
       </n-text>
 
       <n-text depth="3" class="meta-text">
@@ -81,7 +81,7 @@
         :disabled="!canMerge"
         @click="emit('merge-to-default', { worktree, strategy: 'squash' })"
       >
-        合并至
+        {{ t('worktree.mergeTo') }}
       </n-button>
       <n-button
         size="tiny"
@@ -105,9 +105,11 @@ import GitStatusBadge from '@/components/common/GitStatusBadge.vue';
 import type { Worktree } from '@/types/models';
 import type { EditorPreference } from '@/stores/settings';
 import { DEFAULT_EDITOR, EDITOR_OPTIONS, EDITOR_LABEL_MAP, isEditorPreference } from '@/constants/editor';
+import { useLocale } from '@/composables/useLocale';
+
+const { t, locale } = useLocale();
 
 dayjs.extend(relativeTime);
-dayjs.locale('zh-cn');
 
 type EditorOption = {
   label: string;
@@ -143,8 +145,8 @@ const emit = defineEmits<{
 
 const actions = computed<DropdownOption[]>(() => {
   const baseActions: DropdownOption[] = [
-    { label: '打开文件管理器', key: 'explorer' },
-    { label: '打开终端', key: 'terminal' },
+    { label: t('worktree.openInExplorer2'), key: 'explorer' },
+    { label: t('worktree.openTerminal'), key: 'terminal' },
   ];
 
   if (props.canSync) {
@@ -156,7 +158,7 @@ const actions = computed<DropdownOption[]>(() => {
 
   if (props.canMerge) {
     baseActions.push({
-      label: '合并至',
+      label: t('worktree.mergeTo'),
       key: 'merge-group',
       children: [
         { label: 'Merge', key: 'merge-merge' },
@@ -173,7 +175,7 @@ const actions = computed<DropdownOption[]>(() => {
   }
 
   baseActions.push({
-    label: props.isDeleting ? '删除中...' : '删除',
+    label: props.isDeleting ? t('worktree.deleting') : t('common.delete'),
     key: 'delete',
     disabled: props.worktree.isMain || props.isDeleting,
   });
@@ -242,16 +244,18 @@ function handleEditorSelect(key: string | number) {
 
 function formatCommitTime(time: string | null) {
   if (!time) {
-    return '无提交';
+    return t('worktree.noCommit');
   }
-  return '提交于 ' + dayjs(time).fromNow();
+  const dayjsLocale = locale.value === 'zh-CN' ? 'zh-cn' : 'en';
+  return t('worktree.committedAt') + ' ' + dayjs(time).locale(dayjsLocale).fromNow();
 }
 
 function formatRefreshTime(time: string | null) {
   if (!time) {
-    return '未刷新';
+    return t('worktree.notRefreshed');
   }
-  return '上次刷新：' + dayjs(time).fromNow();
+  const dayjsLocale = locale.value === 'zh-CN' ? 'zh-cn' : 'en';
+  return t('worktree.lastRefreshed') + dayjs(time).locale(dayjsLocale).fromNow();
 }
 
 function handleSelect() {

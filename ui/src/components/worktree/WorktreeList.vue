@@ -2,7 +2,7 @@
   <div class="worktree-list">
     <div class="list-header">
       <n-space justify="space-between" align="center">
-        <h3>Worktrees</h3>
+        <h3>{{ t('worktree.title') }}</h3>
         <n-space align="center">
           <n-button
             text
@@ -13,7 +13,7 @@
             <template #icon>
               <n-icon><GitBranchOutline /></n-icon>
             </template>
-            分支
+            {{ t('worktree.branches') }}
           </n-button>
           <n-button
             text
@@ -34,7 +34,7 @@
             <template #icon>
               <n-icon><AddOutline /></n-icon>
             </template>
-            新建
+            {{ t('worktree.new') }}
           </n-button>
         </n-space>
       </n-space>
@@ -44,10 +44,10 @@
       v-if="showGitWarning"
       type="warning"
       class="git-warning"
-      title="Worktree 功能不可用"
+      :title="t('worktree.featureUnavailable')"
       :show-icon="false"
     >
-      当前项目目录不是 Git 仓库，无法创建或刷新 Worktree；仍可使用任务等其他功能。
+      {{ t('worktree.notGitRepo') }}
     </n-alert>
 
     <n-scrollbar style="max-height: calc(100vh - 80px)">
@@ -74,7 +74,7 @@
           @commit-worktree="openCommitDialog"
         />
       </div>
-      <n-empty v-else description="暂无 Worktree" class="worktree-empty" />
+      <n-empty v-else :description="t('worktree.noWorktrees')" class="worktree-empty" />
     </n-scrollbar>
 
     <WorktreeCreateDialog
@@ -97,10 +97,10 @@
             v-model:value="branchOperation.targetBranch"
             :options="branchOperationOptions"
             filterable
-            placeholder="请选择分支"
+            :placeholder="t('worktree.selectBranch')"
           />
           <n-alert v-else type="warning" show-icon>
-            暂无可用分支，请先在分支管理中创建或创建对应 Worktree。
+            {{ t('worktree.noUpstreamBranch') }}
           </n-alert>
         </div>
         <div v-if="branchOperation.type === 'merge'">
@@ -112,28 +112,28 @@
         <div v-if="showSquashCommitOptions">
           <n-space vertical size="small">
             <n-space align="center">
-              <n-checkbox v-model:checked="branchOperation.commitImmediately">自动提交</n-checkbox>
-              <n-text depth="3">勾选后会在 squash 结束后立刻创建 commit</n-text>
+              <n-checkbox v-model:checked="branchOperation.commitImmediately">{{ t('branch.commitImmediately') }}</n-checkbox>
+              <n-text depth="3">{{ t('branch.commitImmediatelyHint') }}</n-text>
             </n-space>
             <n-input
               v-if="shouldCommitAfterSquash"
               v-model:value="branchOperation.commitMessage"
               type="textarea"
               :autosize="{ minRows: 2, maxRows: 4 }"
-              placeholder="feat: 描述本次 Squash 的改动"
+              :placeholder="t('branch.commitMessagePlaceholder')"
             />
           </n-space>
         </div>
       </n-space>
       <template #action>
-        <n-button @click="closeBranchOperation" :disabled="branchOperationLoading">取消</n-button>
+        <n-button @click="closeBranchOperation" :disabled="branchOperationLoading">{{ t('common.cancel') }}</n-button>
         <n-button
           type="primary"
           :loading="branchOperationLoading"
           :disabled="!branchOperationOptions.length"
           @click="confirmBranchOperation"
         >
-          执行
+          {{ t('branch.executeMerge') }}
         </n-button>
       </template>
     </n-modal>
@@ -141,29 +141,29 @@
     <n-modal
       v-model:show="commitDialog.visible"
       preset="dialog"
-      title="提交更改"
+      :title="t('worktree.commitChanges')"
       :mask-closable="false"
     >
       <n-space vertical size="large">
         <n-text>
-          在 Worktree「{{ commitDialog.worktree?.branchName ?? '' }}」中提交所有更改。
+          {{ t('worktree.commitDescription', { branch: commitDialog.worktree?.branchName ?? '' }) }}
         </n-text>
         <n-input
           v-model:value="commitDialog.message"
           type="textarea"
-          placeholder="请输入提交信息"
+          :placeholder="t('worktree.commitMessagePlaceholder')"
           :autosize="{ minRows: 3, maxRows: 6 }"
         />
       </n-space>
       <template #action>
-        <n-button @click="closeCommitDialog" :disabled="commitWorktreeReq.loading.value">取消</n-button>
+        <n-button @click="closeCommitDialog" :disabled="commitWorktreeReq.loading.value">{{ t('common.cancel') }}</n-button>
         <n-button
           type="primary"
           :loading="commitWorktreeReq.loading.value"
           :disabled="!commitDialog.message.trim()"
           @click="submitCommit"
         >
-          提交
+          {{ t('common.submit') }}
         </n-button>
       </template>
     </n-modal>
@@ -180,6 +180,7 @@ import WorktreeCard from './WorktreeCard.vue';
 import WorktreeCreateDialog from './WorktreeCreateDialog.vue';
 import { useProjectStore } from '@/stores/project';
 import { useSettingsStore } from '@/stores/settings';
+import { useLocale } from '@/composables/useLocale';
 import Apis from '@/api';
 import { useReq } from '@/api/composable';
 import { extractItem } from '@/api/response';
@@ -197,6 +198,7 @@ const message = useMessage();
 const dialog = useDialog();
 const settingsStore = useSettingsStore();
 const { editorSettings } = storeToRefs(settingsStore);
+const { t } = useLocale();
 
 const defaultEditorPreference = computed<EditorPreference>(
   () => editorSettings.value.defaultEditor ?? DEFAULT_EDITOR,
@@ -390,7 +392,7 @@ async function handleRefreshAll() {
     return;
   }
   if (!gitFeaturesAvailable.value) {
-    message.warning('当前项目不是 Git 仓库，无法刷新 Worktree 状态');
+    message.warning(t('worktree.notGitRepoCannotRefresh'));
     return;
   }
   try {
@@ -401,9 +403,9 @@ async function handleRefreshAll() {
     // 最后重新获取列表以确保 UI 显示最新的状态
     await projectStore.fetchWorktrees(projectStore.currentProject.id);
     await branchListReq.forceReload(projectStore.currentProject.id, true);
-    message.success('已刷新所有 Worktree 状态');
+    message.success(t('worktree.allWorktreesRefreshed'));
   } catch (error: any) {
-    message.error(error?.message ?? '刷新失败', { duration: 0, closable: true, keepAliveOnHover: true });
+    message.error(error?.message ?? t('branch.refreshFailed'), { duration: 0, closable: true, keepAliveOnHover: true });
   }
 }
 
@@ -414,19 +416,19 @@ async function handleRefresh(id: string) {
     if (updated) {
       projectStore.updateWorktreeInList(id, updated);
     }
-    message.success('状态已刷新');
+    message.success(t('worktree.statusRefreshed'));
   } catch (error: any) {
-    message.error(error?.message ?? '刷新失败', { duration: 0, closable: true, keepAliveOnHover: true });
+    message.error(error?.message ?? t('branch.refreshFailed'), { duration: 0, closable: true, keepAliveOnHover: true });
   }
 }
 
 
 function confirmDelete(worktree: Worktree) {
   dialog.warning({
-    title: '确认删除',
-    content: `确认要删除 worktree "${worktree.branchName}" 吗？`,
-    positiveText: '删除',
-    negativeText: '取消',
+    title: t('worktree.confirmDeleteTitle'),
+    content: t('worktree.confirmDeleteContent', { name: worktree.branchName }),
+    positiveText: t('common.delete'),
+    negativeText: t('common.cancel'),
     onPositiveClick: async () => {
       await performDeleteWorktree(worktree);
     },
@@ -447,23 +449,23 @@ async function performDeleteWorktree(
   deletingWorktreeId.value = worktree.id;
   try {
     await projectStore.deleteWorktree(worktree.id, force, deleteBranch);
-    message.success('Worktree 已删除');
+    message.success(t('worktree.worktreeDeleted'));
   } catch (error: any) {
     const errorMessage = extractErrorMessage(error);
     if (!force && shouldOfferForceDeletion(errorMessage)) {
       deletingWorktreeId.value = null;
       dialog.warning({
-        title: '强制删除 Worktree？',
-        content: '检测到该 worktree 存在未提交或未跟踪的文件，强制删除将丢弃所有更改，是否继续？',
-        positiveText: '强制删除',
-        negativeText: '取消',
+        title: t('worktree.forceDeleteTitle'),
+        content: t('worktree.forceDeleteContent'),
+        positiveText: t('worktree.forceDelete'),
+        negativeText: t('common.cancel'),
         onPositiveClick: async () => {
           await performDeleteWorktree(worktree, { ...options, force: true, deleteBranch });
         },
       });
       return;
     }
-    message.error(errorMessage || '删除失败', { duration: 0, closable: true, keepAliveOnHover: true });
+    message.error(errorMessage || t('worktree.deleteFailed'), { duration: 0, closable: true, keepAliveOnHover: true });
   } finally {
     deletingWorktreeId.value = null;
   }
@@ -488,7 +490,7 @@ function shouldOfferForceDeletion(message: string): boolean {
   }
   const normalized = message.toLowerCase();
   return (
-    message.includes('目录不为空') ||
+    message.includes(t('worktree.directoryNotEmpty')) ||
     normalized.includes('--force') ||
     normalized.includes('not empty') ||
     normalized.includes('untracked') ||
@@ -500,7 +502,7 @@ async function handleOpenExplorer(path: string) {
   try {
     await projectStore.openInExplorer(path);
   } catch (error: any) {
-    message.error(error?.message ?? '打开文件管理器失败', { duration: 0, closable: true, keepAliveOnHover: true });
+    message.error(error?.message ?? t('worktree.openExplorerFailed'), { duration: 0, closable: true, keepAliveOnHover: true });
   }
 }
 
@@ -514,7 +516,7 @@ async function handleOpenEditor(payload: { worktree: Worktree; editor: EditorPre
     return;
   }
   if (editor === 'custom' && !customEditorCommand.value) {
-    message.warning('请先在设置中配置自定义命令');
+    message.warning(t('worktree.configureCustomCommandFirst'));
     return;
   }
   try {
@@ -523,10 +525,10 @@ async function handleOpenEditor(payload: { worktree: Worktree; editor: EditorPre
       editor,
       editor === 'custom' ? customEditorCommand.value : undefined,
     );
-    const label = EDITOR_LABEL_MAP[editor] ?? '编辑器';
-    message.success(`已在 ${label} 中打开`);
+    const label = EDITOR_LABEL_MAP[editor] ?? t('worktree.editor');
+    message.success(t('worktree.openedInEditor', { editor: label }));
   } catch (error: any) {
-    message.error(error?.message ?? '打开编辑器失败', { duration: 0, closable: true, keepAliveOnHover: true });
+    message.error(error?.message ?? t('worktree.openEditorFailed'), { duration: 0, closable: true, keepAliveOnHover: true });
   }
 }
 
@@ -547,7 +549,7 @@ function handleSelectWorktree(worktreeId: string) {
 
 function goToBranchManagement() {
   if (!projectStore.currentProject) {
-    message.warning('请先选择项目');
+    message.warning(t('project.selectProjectFirst'));
     return;
   }
   router.push({ name: 'project-branches', params: { id: projectStore.currentProject.id } });
@@ -556,7 +558,7 @@ function goToBranchManagement() {
 function openSyncDialog(worktree: Worktree) {
   const initial = resolveSyncBranchDefault();
   if (!initial) {
-    message.error('暂无可用的上游分支，请先在分支管理中创建', { duration: 0, closable: true, keepAliveOnHover: true });
+    message.error(t('worktree.noUpstreamBranch'), { duration: 0, closable: true, keepAliveOnHover: true });
     return;
   }
   branchOperation.visible = true;
@@ -569,7 +571,7 @@ function openSyncDialog(worktree: Worktree) {
 function openMergeDialog(payload: { worktree: Worktree; strategy?: 'merge' | 'squash' }) {
   const initial = resolveMergeTargetDefault();
   if (!initial) {
-    message.error('没有可用的目标 Worktree，请先创建对应分支的 Worktree', { duration: 0, closable: true, keepAliveOnHover: true });
+    message.error(t('worktree.noTargetWorktree'), { duration: 0, closable: true, keepAliveOnHover: true });
     return;
   }
   branchOperation.visible = true;
@@ -594,9 +596,9 @@ const branchOperationTitle = computed(() => {
     return 'Rebase';
   }
   if (branchOperation.type === 'merge') {
-    return '合并至';
+    return t('worktree.mergeTo');
   }
-  return '分支操作';
+  return t('worktree.branchOperation');
 });
 
 const branchOperationDescription = computed(() => {
@@ -604,13 +606,18 @@ const branchOperationDescription = computed(() => {
     return '';
   }
   if (branchOperation.type === 'rebase') {
-    return `将在 Worktree「${branchOperation.worktree.branchName}」中执行 rebase，来源分支：${
-      branchOperation.targetBranch || defaultBranch.value || ''
-    }`;
+    return t('worktree.rebaseDescription', {
+      branch: branchOperation.worktree.branchName,
+      source: branchOperation.targetBranch || defaultBranch.value || ''
+    });
   }
   const strategyLabel = branchOperation.strategy === 'squash' ? 'squash' : 'merge';
   const target = branchOperation.targetBranch || defaultBranch.value || '';
-  return `将以 ${strategyLabel} 方式把「${branchOperation.worktree.branchName}」合并到分支 ${target}。`;
+  return t('worktree.mergeDescription', {
+    strategy: strategyLabel,
+    source: branchOperation.worktree.branchName,
+    target
+  });
 });
 
 const branchOperationOptions = computed(() => {
@@ -688,7 +695,7 @@ async function submitCommit() {
   }
   const trimmed = commitDialog.message.trim();
   if (!trimmed) {
-    message.warning('请输入提交信息');
+    message.warning(t('worktree.commitMessagePlaceholder'));
     return;
   }
   try {
@@ -698,20 +705,20 @@ async function submitCommit() {
     if (updated) {
       projectStore.updateWorktreeInList(commitDialog.worktree.id, updated);
     }
-    message.success('提交成功');
+    message.success(t('worktree.commitSuccess'));
     closeCommitDialog();
   } catch (error: any) {
-    message.error(error?.message ?? '提交失败', { duration: 0, closable: true, keepAliveOnHover: true });
+    message.error(error?.message ?? t('worktree.commitFailed'), { duration: 0, closable: true, keepAliveOnHover: true });
   }
 }
 
 async function confirmBranchOperation() {
   if (!branchOperation.worktree || !branchOperation.type || !branchOperation.targetBranch) {
-    message.warning('请选择目标分支');
+    message.warning(t('worktree.selectTargetBranch'));
     return;
   }
   if (shouldCommitAfterSquash.value && !branchOperation.commitMessage.trim()) {
-    message.warning('请输入提交信息');
+    message.warning(t('worktree.commitMessagePlaceholder'));
     return;
   }
   branchOperationLoading.value = true;
@@ -732,7 +739,7 @@ async function confirmBranchOperation() {
         worktree => worktree.branchName === branchOperation.targetBranch,
       );
       if (!targetWorktree) {
-        throw new Error('未找到目标分支对应的 Worktree');
+        throw new Error(t('worktree.targetWorktreeNotFound'));
       }
       const strategy = branchOperation.strategy === 'squash' ? 'squash' : 'merge';
       const shouldCommit = strategy === 'squash' && branchOperation.commitImmediately;
@@ -760,7 +767,7 @@ async function confirmBranchOperation() {
     }
     closeBranchOperation();
   } catch (error: any) {
-    message.error(error?.message ?? '操作失败', { duration: 0, closable: true, keepAliveOnHover: true });
+    message.error(error?.message ?? t('common.error'), { duration: 0, closable: true, keepAliveOnHover: true });
   } finally {
     branchOperationLoading.value = false;
   }
@@ -785,14 +792,14 @@ async function performMerge(
   });
   const result = extractItem(response) as MergeResult | undefined;
   if (!result) {
-    message.success('操作成功');
+    message.success(t('common.success'));
     return;
   }
   if (result.success) {
-    message.success(result.message || '操作成功');
+    message.success(result.message || t('common.success'));
   } else {
-    const conflicts = result.conflicts?.length ? `冲突文件：${result.conflicts.join(', ')}` : '';
-    message.warning(result.message || '存在冲突，请手动处理', { duration: 0, closable: true, keepAliveOnHover: true });
+    const conflicts = result.conflicts?.length ? t('worktree.conflictFiles', { files: result.conflicts.join(', ') }) : '';
+    message.warning(result.message || t('worktree.hasConflictsManual'), { duration: 0, closable: true, keepAliveOnHover: true });
     if (conflicts) {
       message.info(conflicts, { duration: 0, closable: true, keepAliveOnHover: true });
     }

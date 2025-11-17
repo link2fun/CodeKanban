@@ -2,31 +2,31 @@
   <n-modal
     v-model:show="visible"
     preset="dialog"
-    title="编辑项目"
-    positive-text="保存"
-    negative-text="取消"
+    :title="t('project.editProject')"
+    :positive-text="t('common.save')"
+    :negative-text="t('common.cancel')"
     :loading="loading"
     @positive-click="handleUpdate"
   >
     <n-form ref="formRef" :model="formData" :rules="rules" label-placement="top">
-      <n-form-item label="项目名称" path="name">
-        <n-input v-model:value="formData.name" placeholder="请输入项目名称" />
+      <n-form-item :label="t('project.projectName')" path="name">
+        <n-input v-model:value="formData.name" :placeholder="t('project.namePlaceholder')" />
       </n-form-item>
-      <n-form-item label="项目描述" path="description">
+      <n-form-item :label="t('project.projectDescription')" path="description">
         <n-input
           v-model:value="formData.description"
           type="textarea"
           :rows="3"
-          placeholder="请输入项目描述（可选）"
+          :placeholder="t('project.descriptionPlaceholder')"
         />
       </n-form-item>
-      <n-form-item label="项目路径">
+      <n-form-item :label="t('project.projectPath')">
         <n-input :value="props.project?.path ?? ''" disabled />
       </n-form-item>
-      <n-form-item label="隐藏路径" path="hidePath">
+      <n-form-item :label="t('project.hidePath')" path="hidePath">
         <n-space align="center">
           <n-switch v-model:value="formData.hidePath" />
-          <n-text depth="3">开启后，项目列表与侧边栏中将不再展示绝对路径。</n-text>
+          <n-text depth="3">{{ t('project.hidePathHint') }}</n-text>
         </n-space>
       </n-form-item>
     </n-form>
@@ -38,6 +38,9 @@ import { computed, ref, watch } from 'vue';
 import { useMessage, type FormInst, type FormRules } from 'naive-ui';
 import { useProjectStore } from '@/stores/project';
 import type { Project } from '@/types/models';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps<{
   show: boolean;
@@ -66,7 +69,7 @@ const formData = ref({
 });
 
 const rules: FormRules = {
-  name: [{ required: true, message: '请输入项目名称', trigger: ['blur', 'input'] }],
+  name: [{ required: true, message: t('validation.projectNameRequired'), trigger: ['blur', 'input'] }],
 };
 
 function syncFormWithProject(project: Project | null) {
@@ -99,7 +102,7 @@ watch(visible, value => {
 
 async function handleUpdate() {
   if (!props.project) {
-    message.warning('请选择需要编辑的项目');
+    message.warning(t('project.selectProjectToEdit'));
     return false;
   }
   try {
@@ -110,7 +113,7 @@ async function handleUpdate() {
       description: formData.value.description.trim(),
       hidePath: formData.value.hidePath,
     });
-    message.success('项目更新成功');
+    message.success(t('message.projectUpdated'));
     emit('success', project);
     visible.value = false;
   } catch (error: any) {

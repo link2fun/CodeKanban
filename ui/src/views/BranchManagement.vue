@@ -7,24 +7,25 @@
             <template #icon>
               <n-icon><ChevronBackOutline /></n-icon>
             </template>
-            返回项目
+            {{ t('branch.backToProject') }}
           </n-button>
           <span>{{ pageHeading }}</span>
         </n-space>
       </template>
       <template #extra>
-        <n-space>
+        <n-space align="center">
+          <LanguageSwitcher />
           <n-button quaternary :disabled="!currentProjectId" :loading="projectStore.loading" @click="reloadBranches(true)">
             <template #icon>
               <n-icon><RefreshOutline /></n-icon>
             </template>
-            刷新
+            {{ t('branch.refresh') }}
           </n-button>
           <n-button type="primary" :disabled="!currentProjectId" @click="openCreateModal()">
             <template #icon>
               <n-icon><AddOutline /></n-icon>
             </template>
-            新建分支
+            {{ t('branch.newBranch') }}
           </n-button>
         </n-space>
       </template>
@@ -37,15 +38,15 @@
         round
         clearable
         size="large"
-        placeholder="搜索分支 (Ctrl+F)"
+        :placeholder="t('branch.searchBranch')"
       >
         <template #prefix>
           <n-icon><SearchOutline /></n-icon>
         </template>
       </n-input>
-      <n-statistic label="本地分支">{{ branchList.local.length }}</n-statistic>
-      <n-statistic label="远程分支">{{ branchList.remote.length }}</n-statistic>
-      <n-statistic label="已绑定 Worktree">{{ worktreeBoundCount }}</n-statistic>
+      <n-statistic :label="t('branch.localBranches')">{{ branchList.local.length }}</n-statistic>
+      <n-statistic :label="t('branch.remoteBranches')">{{ branchList.remote.length }}</n-statistic>
+      <n-statistic :label="t('branch.worktreeBound')">{{ worktreeBoundCount }}</n-statistic>
     </n-space>
 
     <n-alert v-if="branchError" type="error" class="branch-alert" closable @close="branchError = null">
@@ -55,12 +56,12 @@
     <n-spin :show="branchLoading">
       <n-grid cols="24" x-gap="16" y-gap="16">
         <n-gi :span="24" :lg="12">
-          <n-card title="本地分支">
+          <n-card :title="t('branch.localBranches')">
             <template #header-extra>
-              <n-text depth="3">共 {{ filteredLocalBranches.length }} 个</n-text>
+              <n-text depth="3">{{ t('branch.totalCount', { count: filteredLocalBranches.length }) }}</n-text>
             </template>
             <template v-if="filteredLocalBranches.length === 0">
-              <n-empty description="暂无本地分支" />
+              <n-empty :description="t('branch.noLocalBranches')" />
             </template>
             <template v-else>
               <n-virtual-list
@@ -97,12 +98,12 @@
         </n-gi>
 
         <n-gi :span="24" :lg="12">
-          <n-card title="远程分支">
+          <n-card :title="t('branch.remoteBranches')">
             <template #header-extra>
-              <n-text depth="3">共 {{ filteredRemoteBranches.length }} 个</n-text>
+              <n-text depth="3">{{ t('branch.totalCount', { count: filteredRemoteBranches.length }) }}</n-text>
             </template>
             <template v-if="filteredRemoteBranches.length === 0">
-              <n-empty description="暂无远程分支" />
+              <n-empty :description="t('branch.noRemoteBranches')" />
             </template>
             <template v-else>
               <n-virtual-list
@@ -133,67 +134,62 @@
         </n-gi>
 
         <n-gi :span="24">
-          <div ref="mergeSectionRef">
-            <n-card title="合并与冲突检测">
-              <template #header-extra>
-                <n-button secondary size="small" :disabled="!canMerge" @click="scrollToMerge">
-                  定位到表单
-                </n-button>
-              </template>
+          <div>
+            <n-card :title="t('branch.mergeAndConflict')">
               <n-form ref="mergeFormRef" :model="mergeForm" :rules="mergeFormRules" label-placement="left">
                 <n-grid cols="1 640:2" x-gap="16">
                   <n-gi>
-                    <n-form-item label="目标 Worktree" path="worktreeId">
+                    <n-form-item :label="t('branch.targetWorktree')" path="worktreeId">
                       <n-select
                         v-model:value="mergeForm.worktreeId"
                         :options="worktreeOptions"
-                        placeholder="请选择 Worktree"
+                        :placeholder="t('branch.selectWorktree')"
                         :disabled="worktreeOptions.length === 0"
                       />
                     </n-form-item>
                   </n-gi>
                   <n-gi>
-                    <n-form-item label="目标分支" path="targetBranch">
+                    <n-form-item :label="t('branch.targetBranch')" path="targetBranch">
                       <n-select
                         v-model:value="mergeForm.targetBranch"
                         :options="localBranchOptions"
                         filterable
-                        placeholder="请选择目标分支"
+                        :placeholder="t('branch.selectTargetBranch')"
                       />
                     </n-form-item>
                   </n-gi>
                   <n-gi>
-                    <n-form-item label="源分支" path="sourceBranch">
+                    <n-form-item :label="t('branch.sourceBranch')" path="sourceBranch">
                       <n-select
                         v-model:value="mergeForm.sourceBranch"
                         :options="localBranchOptions"
                         filterable
-                        placeholder="请选择要合并的分支"
+                        :placeholder="t('branch.selectSourceBranch')"
                       />
                     </n-form-item>
                   </n-gi>
                 </n-grid>
 
-                <n-form-item label="策略">
+                <n-form-item :label="t('branch.strategy')">
                   <n-radio-group v-model:value="mergeForm.strategy">
-                    <n-radio value="merge">Merge</n-radio>
-                    <n-radio value="rebase">Rebase</n-radio>
-                    <n-radio value="squash">Squash</n-radio>
+                    <n-radio value="merge">{{ t('branch.merge') }}</n-radio>
+                    <n-radio value="rebase">{{ t('branch.rebase') }}</n-radio>
+                    <n-radio value="squash">{{ t('branch.squash') }}</n-radio>
                   </n-radio-group>
                 </n-form-item>
                 <template v-if="showSquashCommitOptions">
-                  <n-form-item label="提交控制">
+                  <n-form-item :label="t('branch.commitControl')">
                     <n-space align="center">
-                      <n-checkbox v-model:checked="mergeForm.commitImmediately">同时提交</n-checkbox>
-                      <n-text depth="3">勾选后会在 squash 结束后立刻创建 commit</n-text>
+                      <n-checkbox v-model:checked="mergeForm.commitImmediately">{{ t('branch.commitImmediately') }}</n-checkbox>
+                      <n-text depth="3">{{ t('branch.commitImmediatelyHint') }}</n-text>
                     </n-space>
                   </n-form-item>
-                  <n-form-item v-if="shouldCommitAfterSquash" label="提交信息" path="commitMessage">
+                  <n-form-item v-if="shouldCommitAfterSquash" :label="t('branch.commitMessage')" path="commitMessage">
                     <n-input
                       v-model:value="mergeForm.commitMessage"
                       type="textarea"
                       :autosize="{ minRows: 2, maxRows: 4 }"
-                      placeholder="feat: 描述本次 Squash 的改动"
+                      :placeholder="t('branch.commitMessagePlaceholder')"
                     />
                   </n-form-item>
                 </template>
@@ -205,10 +201,10 @@
                     :disabled="!canExecuteMerge"
                     @click="submitMerge"
                   >
-                    执行合并
+                    {{ t('branch.executeMerge') }}
                   </n-button>
                   <n-button @click="refreshMergeStatus" :disabled="!mergeForm.worktreeId">
-                    刷新 Worktree 状态
+                    {{ t('branch.refreshWorktreeStatus') }}
                   </n-button>
                 </n-space>
 
@@ -232,28 +228,28 @@
       </n-grid>
     </n-spin>
 
-    <n-modal v-model:show="showCreateModal" preset="dialog" title="新建分支" :mask-closable="false">
+    <n-modal v-model:show="showCreateModal" preset="dialog" :title="t('branch.createBranchDialog')" :mask-closable="false">
       <n-form ref="createFormRef" :model="createForm" :rules="createFormRules" label-placement="top">
-        <n-form-item label="分支名称" path="name">
-          <n-input v-model:value="createForm.name" placeholder="feature/awesome" />
+        <n-form-item :label="t('branch.branchNameField')" path="name">
+          <n-input v-model:value="createForm.name" :placeholder="t('branch.branchNameFieldPlaceholder')" />
         </n-form-item>
-        <n-form-item label="基础分支" path="base">
+        <n-form-item :label="t('branch.baseBranchField')" path="base">
           <n-select
             v-model:value="createForm.base"
             :options="baseBranchOptions"
             filterable
-            placeholder="默认为项目默认分支"
+            :placeholder="t('branch.baseBranchDefault')"
           />
         </n-form-item>
         <n-form-item>
-          <n-checkbox v-model:checked="createForm.createWorktree">同时创建 Worktree</n-checkbox>
+          <n-checkbox v-model:checked="createForm.createWorktree">{{ t('branch.createWorktreeWithBranch') }}</n-checkbox>
         </n-form-item>
       </n-form>
       <template #action>
         <n-space justify="end">
-          <n-button @click="closeCreateModal">取消</n-button>
+          <n-button @click="closeCreateModal">{{ t('common.cancel') }}</n-button>
           <n-button type="primary" :loading="createBranchReq.loading.value" @click="submitCreateBranch">
-            创建
+            {{ t('common.create') }}
           </n-button>
         </n-space>
       </template>
@@ -269,6 +265,8 @@ import { useTitle } from '@vueuse/core';
 import { AddOutline, ChevronBackOutline, RefreshOutline, SearchOutline } from '@vicons/ionicons5';
 import type { BranchInfo, BranchListResult, MergeResult } from '@/types/models';
 import { useProjectStore } from '@/stores/project';
+import { useLocale } from '@/composables/useLocale';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 import { debounce } from '@/utils/debounce';
 import Apis from '@/api';
 import { useReq } from '@/api/composable';
@@ -281,14 +279,15 @@ const router = useRouter();
 const projectStore = useProjectStore();
 const dialog = useDialog();
 const message = useMessage();
+const { t } = useLocale();
 
 const currentProjectId = computed(() => (typeof route.params.id === 'string' ? route.params.id : ''));
 const pageHeading = computed(() =>
-  projectStore.currentProject ? `${projectStore.currentProject.name} · 分支管理` : '分支管理',
+  projectStore.currentProject ? `${projectStore.currentProject.name} · ${t('branch.title')}` : t('branch.title'),
 );
 useTitle(
   computed(() =>
-    projectStore.currentProject ? `${projectStore.currentProject.name} - 分支管理` : '分支管理',
+    projectStore.currentProject ? `${projectStore.currentProject.name} - ${t('branch.title')}` : t('branch.title'),
   ),
 );
 
@@ -349,7 +348,6 @@ const searchInput = ref('');
 const searchTerm = ref('');
 const branchError = ref<string | null>(null);
 const mergeResult = ref<MergeResult | null>(null);
-const mergeSectionRef = ref<HTMLElement | null>(null);
 
 const createFormRef = ref<FormInst | null>(null);
 const createForm = reactive({
@@ -358,7 +356,7 @@ const createForm = reactive({
   createWorktree: false,
 });
 const createFormRules: FormRules = {
-  name: [{ required: true, message: '请输入分支名称' }],
+  name: [{ required: true, message: t('validation.branchNameRequired') }],
 };
 
 const mergeFormRef = ref<FormInst | null>(null);
@@ -373,15 +371,15 @@ const mergeForm = reactive({
 const showSquashCommitOptions = computed(() => mergeForm.strategy === 'squash');
 const shouldCommitAfterSquash = computed(() => showSquashCommitOptions.value && mergeForm.commitImmediately);
 const mergeFormRules: FormRules = {
-  worktreeId: [{ required: true, message: '请选择 Worktree' }],
-  targetBranch: [{ required: true, message: '请选择目标分支' }],
-  sourceBranch: [{ required: true, message: '请选择源分支' }],
+  worktreeId: [{ required: true, message: t('branch.selectWorktree') }],
+  targetBranch: [{ required: true, message: t('branch.selectTargetBranch') }],
+  sourceBranch: [{ required: true, message: t('branch.selectSourceBranch') }],
   commitMessage: [
     {
       trigger: ['input', 'blur'],
       validator: () => {
         if (shouldCommitAfterSquash.value && !mergeForm.commitMessage.trim()) {
-          return new Error('请输入提交信息');
+          return new Error(t('branch.commitMessageRequired'));
         }
         return true;
       },
@@ -429,7 +427,7 @@ async function initializeProject(id: string) {
     createForm.base = projectStore.currentProject?.defaultBranch ?? '';
     await reloadBranches(true);
   } catch (error: any) {
-    branchError.value = error?.message ?? '加载项目失败';
+    branchError.value = error?.message ?? t('branch.loadProjectFailed');
   }
 }
 
@@ -445,7 +443,7 @@ async function reloadBranches(force = false) {
       await branchListReq.send(currentProjectId.value);
     }
   } catch (error: any) {
-    branchError.value = error?.message ?? '获取分支失败';
+    branchError.value = error?.message ?? t('branch.fetchBranchesFailed');
   }
 }
 
@@ -489,7 +487,7 @@ const localBranchOptions = computed(() =>
 
 const baseBranchOptions = computed(() => [
   ...(defaultBranch.value
-    ? [{ label: `${defaultBranch.value} (默认)`, value: defaultBranch.value }]
+    ? [{ label: t('branch.defaultBranchLabel', { branch: defaultBranch.value }), value: defaultBranch.value }]
     : []),
   ...branchList.value.local
     .filter(branch => branch.name !== defaultBranch.value)
@@ -520,7 +518,7 @@ async function submitCreateBranch() {
       base: createForm.base,
       createWorktree: createForm.createWorktree,
     });
-    message.success('分支创建成功');
+    message.success(t('branch.branchCreated'));
     showCreateModal.value = false;
     await reloadBranches(true);
     if (createForm.createWorktree) {
@@ -544,20 +542,20 @@ async function handleDeleteBranch(branch: BranchInfo) {
   }
   const requiresForce = Boolean(branch.hasWorktree);
   dialog.warning({
-    title: requiresForce ? '强制删除分支' : '删除分支',
-    content: `确定要删除分支 "${branch.name}" 吗？${
-      requiresForce ? ' 关联的 Worktree 会一并删除。' : ''
+    title: requiresForce ? t('branch.forceDeleteBranch') : t('branch.deleteBranch'),
+    content: `${t('branch.confirmDeleteBranch', { name: branch.name })}${
+      requiresForce ? ` ${t('branch.confirmDeleteBranchWithWorktree')}` : ''
     }`,
-    negativeText: '取消',
-    positiveText: requiresForce ? '强制删除' : '删除',
+    negativeText: t('common.cancel'),
+    positiveText: requiresForce ? t('branch.forceDelete') : t('common.delete'),
     onPositiveClick: async () => {
       try {
         await deleteBranchReq.send(currentProjectId.value, branch.name, requiresForce);
-        message.success('分支已删除');
+        message.success(t('branch.branchDeleted'));
         await reloadBranches(true);
         await projectStore.fetchWorktrees(currentProjectId.value);
       } catch (error: any) {
-        message.error(error?.message ?? '删除失败');
+        message.error(error?.message ?? t('branch.deleteFailed'));
       }
     },
   });
@@ -575,9 +573,9 @@ async function handleCreateWorktree(branch: BranchInfo) {
     });
     await projectStore.fetchWorktrees(currentProjectId.value);
     await reloadBranches(true);
-    message.success('Worktree 创建成功');
+    message.success(t('branch.worktreeCreated'));
   } catch (error: any) {
-    message.error(error?.message ?? '创建 Worktree 失败');
+    message.error(error?.message ?? t('branch.createWorktreeFailed'));
   }
 }
 
@@ -587,7 +585,7 @@ function handleOpenWorktree(branch: BranchInfo) {
   }
   const target = projectStore.worktrees.find(worktree => worktree.branchName === branch.name);
   if (!target) {
-    message.warning('尚未创建 Worktree');
+    message.warning(t('branch.noWorktreeCreated'));
     return;
   }
   projectStore.setSelectedWorktree(target.id);
@@ -599,17 +597,17 @@ async function submitMerge() {
   const targetBranch = mergeForm.targetBranch.trim();
   const sourceBranch = mergeForm.sourceBranch;
   if (!worktreeId || !sourceBranch) {
-    message.warning('请选择 Worktree 和源分支');
+    message.warning(t('branch.selectWorktreeAndSource'));
     return;
   }
   if (!targetBranch) {
-    message.warning('无法确定目标分支，请重新选择 Worktree');
+    message.warning(t('branch.cannotDetermineTarget'));
     return;
   }
   const commitAfter = shouldCommitAfterSquash.value;
   const commitMessage = commitAfter ? mergeForm.commitMessage.trim() : '';
   if (commitAfter && !commitMessage) {
-    message.warning('请输入提交信息');
+    message.warning(t('branch.commitMessageRequired'));
     return;
   }
   try {
@@ -624,7 +622,7 @@ async function submitMerge() {
     if (payload) {
       mergeResult.value = payload;
       if (payload.success) {
-        message.success(payload.message || '合并完成');
+        message.success(payload.message || t('branch.mergeCompleted'));
         if (commitAfter) {
           mergeForm.commitMessage = '';
         }
@@ -647,11 +645,11 @@ async function submitMerge() {
           }));
         }
       } else {
-        message.warning(payload.message || '存在冲突');
+        message.warning(payload.message || t('branch.hasConflicts'));
       }
     }
   } catch (error: any) {
-    message.error(error?.message ?? '合并失败');
+    message.error(error?.message ?? t('branch.mergeFailed'));
   }
 }
 
@@ -665,9 +663,9 @@ async function refreshMergeStatus() {
     if (updated) {
       projectStore.updateWorktreeInList(mergeForm.worktreeId, updated);
     }
-    message.success('Worktree 状态已刷新');
+    message.success(t('branch.worktreeStatusRefreshed'));
   } catch (error: any) {
-    message.error(error?.message ?? '刷新失败');
+    message.error(error?.message ?? t('branch.refreshFailed'));
   }
 }
 
@@ -694,10 +692,6 @@ const canExecuteMerge = computed(() => {
     (selectedWorktree.statusUntracked ?? 0) > 0;
   return !hasUncommittedChanges;
 });
-
-function scrollToMerge() {
-  mergeSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
 
 function goBackToWorkspace() {
   if (!currentProjectId.value) {

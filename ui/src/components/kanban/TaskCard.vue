@@ -18,7 +18,7 @@
               </n-icon>
             </n-button>
           </template>
-          开始工作(启动一个以此命名的终端)
+          {{ t('task.startWorkTooltip') }}
         </n-tooltip>
         <n-tooltip trigger="hover" placement="bottom">
           <template #trigger>
@@ -28,7 +28,7 @@
               </n-icon>
             </n-button>
           </template>
-          复制任务名
+          {{ t('task.copyTaskName') }}
         </n-tooltip>
         <n-tooltip trigger="hover" placement="bottom">
           <template #trigger>
@@ -38,7 +38,7 @@
               </n-icon>
             </n-button>
           </template>
-          快捷编辑
+          {{ t('task.quickEdit') }}
         </n-tooltip>
         <n-tooltip trigger="hover" placement="bottom">
           <template #trigger>
@@ -48,7 +48,7 @@
               </n-icon>
             </n-button>
           </template>
-          快捷删除
+          {{ t('task.quickDelete') }}
         </n-tooltip>
       </div>
     </div>
@@ -59,7 +59,7 @@
           {{ displayBranchName }}
         </n-tag>
         <n-tag v-if="task.dueDate" size="tiny" :type="isOverdue ? 'error' : 'default'" :bordered="false">
-          截止 {{ formatDate(task.dueDate) }}
+          {{ t('task.duePrefix') }} {{ formatDate(task.dueDate) }}
         </n-tag>
       </n-space>
     </div>
@@ -77,6 +77,9 @@ import { computed } from 'vue';
 import dayjs from 'dayjs';
 import { CopyOutline, CreateOutline, TrashOutline, PlayCircleOutline } from '@vicons/ionicons5';
 import type { Task } from '@/types/models';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps<{
   task: Task;
@@ -90,15 +93,15 @@ const emit = defineEmits<{
   'start-work': [];
 }>();
 
-const priorityMap: Record<number, { label: string; type: 'default' | 'info' | 'warning' | 'error' }> = {
-  0: { label: '', type: 'default' },
-  1: { label: '低', type: 'info' },
-  2: { label: '中', type: 'warning' },
-  3: { label: '高', type: 'error' },
-};
+const priorityMap = computed((): Record<number, { label: string; type: 'default' | 'info' | 'warning' | 'error' }> => ({
+  0: { label: '', type: 'default' as const },
+  1: { label: t('task.priority.low'), type: 'info' as const },
+  2: { label: t('task.priority.medium'), type: 'warning' as const },
+  3: { label: t('task.priority.high'), type: 'error' as const },
+}));
 
-const priorityType = computed(() => priorityMap[props.task.priority]?.type ?? 'default');
-const priorityLabel = computed(() => priorityMap[props.task.priority]?.label ?? '');
+const priorityType = computed(() => priorityMap.value[props.task.priority]?.type ?? 'default');
+const priorityLabel = computed(() => priorityMap.value[props.task.priority]?.label ?? '');
 
 // 优先显示 branchName，如果没有再尝试从 worktree 中获取
 const displayBranchName = computed(() => {

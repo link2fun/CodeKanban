@@ -4,7 +4,7 @@
       <n-space justify="space-between" align="center">
         <div>
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-            <h2 style="margin: 0;">任务看板</h2>
+            <h2 style="margin: 0;">{{ t('task.kanbanTitle') }}</h2>
             <n-button size="tiny" text :disabled="!projectId || boardLoading" :loading="boardLoading"
               @click="fetchTasks(currentProjectId)" style="font-size: 16px;">
               <template #icon>
@@ -14,29 +14,29 @@
               </template>
             </n-button>
           </div>
-          <n-text depth="3">拖拽卡片以重新排序或切换状态</n-text>
+          <n-text depth="3">{{ t('task.dragToReorder') }}</n-text>
         </div>
         <div class="board-header__actions">
           <n-breadcrumb separator="/">
             <n-breadcrumb-item>
-              <RouterLink to="/">项目列表</RouterLink>
+              <RouterLink to="/">{{ t('project.title') }}</RouterLink>
             </n-breadcrumb-item>
             <n-breadcrumb-item>
               <RouterLink v-if="currentProjectId" :to="{ name: 'project', params: { id: currentProjectId } }">
                 {{ currentProjectName }}
               </RouterLink>
-              <span v-else>未选择项目</span>
+              <span v-else>{{ t('task.noProject') }}</span>
             </n-breadcrumb-item>
           </n-breadcrumb>
           <n-select style="width: 200px" size="small" :disabled="!projectId" v-model:value="worktreeFilterValue"
-            :options="worktreeFilterOptions" placeholder="全部分支" clearable :consistent-menu-width="false" />
+            :options="worktreeFilterOptions" :placeholder="t('task.allBranches')" clearable :consistent-menu-width="false" />
           <n-button size="small" type="primary" :disabled="!projectId" @click="openCreateDialog('todo')">
             <template #icon>
               <n-icon>
                 <AddOutline />
               </n-icon>
             </template>
-            新建任务
+            {{ t('task.newTask') }}
           </n-button>
         </div>
       </n-space>
@@ -44,7 +44,7 @@
 
     <div class="board-body">
       <n-spin :show="boardLoading">
-        <n-empty v-if="!projectId" description="请选择一个项目查看任务" />
+        <n-empty v-if="!projectId" :description="t('task.noProject')" />
         <div v-else class="board-columns">
           <KanbanColumn v-for="column in columns" :key="column.key" :title="column.title" :status="column.key"
             :tasks="filteredTasksByStatus[column.key] ?? []" :show-add-button="projectId ? column.allowQuickAdd : false"
@@ -75,9 +75,12 @@ import TaskDetailDrawer from './TaskDetailDrawer.vue';
 import { useTaskStore } from '@/stores/task';
 import { useTaskActions } from '@/composables/useTaskActions';
 import { useProjectStore } from '@/stores/project';
+import { useLocale } from '@/composables/useLocale';
 import { extractItems, extractItem } from '@/api/response';
 import type { Task } from '@/types/models';
 import type TerminalPanel from '@/components/terminal/TerminalPanel.vue';
+
+const { t } = useLocale();
 
 const props = defineProps<{
   projectId?: string;
@@ -104,14 +107,14 @@ type ColumnConfig = {
   allowQuickAdd?: boolean;
 };
 
-const columns: ColumnConfig[] = [
-  { key: 'todo', title: '待办', allowQuickAdd: true },
-  { key: 'in_progress', title: '进行中', allowQuickAdd: true },
-  { key: 'done', title: '已完成' },
-];
+const columns = computed<ColumnConfig[]>(() => [
+  { key: 'todo', title: t('task.status.todo'), allowQuickAdd: true },
+  { key: 'in_progress', title: t('task.status.inProgress'), allowQuickAdd: true },
+  { key: 'done', title: t('task.status.done') },
+]);
 
 const currentProjectId = computed(() => props.projectId ?? '');
-const currentProjectName = computed(() => projectStore.currentProject?.name ?? '未命名项目');
+const currentProjectName = computed(() => projectStore.currentProject?.name ?? t('task.unnamedProject'));
 
 const createTargetStatus = ref<Task['status']>('todo');
 
@@ -133,7 +136,7 @@ const worktreeFilterOptions = computed(() => {
     label: worktree.branchName,
     value: worktree.id,
   }));
-  return [{ label: '全部分支', value: ALL_WORKTREES_OPTION }, ...options];
+  return [{ label: t('task.allBranches'), value: ALL_WORKTREES_OPTION }, ...options];
 });
 
 const filteredTasksByStatus = computed(() => {
@@ -168,7 +171,7 @@ async function fetchTasks(projectId: string) {
     const items = extractItems(response) as unknown as Task[];
     taskStore.setTasks(items);
   } catch (error: any) {
-    message.error(error?.message ?? '加载任务失败');
+    message.error(error?.message ?? t('task.loadTasksFailed'));
   } finally {
     boardLoading.value = false;
   }
@@ -200,7 +203,7 @@ async function handleTaskMoved(event: { taskId: string; newStatus: Task['status'
       taskStore.upsertTask(updated);
     }
   } catch (error: any) {
-    message.error(error?.message ?? '移动任务失败');
+    message.error(error?.message ?? t('task.moveTaskFailed'));
     fetchTasks(currentProjectId.value);
   }
 }
@@ -228,10 +231,10 @@ function handleColumnQuickAdd(status: Task['status']) {
 
 function handleTaskDeleteRequest(task: Task) {
   dialog.warning({
-    title: '删除任务',
-    content: `确认删除「${task.title}」？`,
-    positiveText: '删除',
-    negativeText: '取消',
+    title: t('task.deleteTaskTitle'),
+    content: t('task.deleteTaskConfirm', { title: task.title }),
+    positiveText: t('common.delete'),
+    negativeText: t('common.cancel'),
     onPositiveClick: () => performTaskDelete(task),
   });
 }
@@ -244,9 +247,9 @@ async function performTaskDelete(task: Task) {
   try {
     await deleteTask.send(task.id);
     taskStore.removeTask(task.id);
-    message.success('任务已删除');
+    message.success(t('task.taskDeleted'));
   } catch (error: any) {
-    message.error(error?.message ?? '删除任务失败');
+    message.error(error?.message ?? t('task.deleteTaskFailed'));
   } finally {
     deletingTaskId.value = null;
   }
@@ -255,12 +258,12 @@ async function performTaskDelete(task: Task) {
 async function handleTaskCopy(task: Task) {
   try {
     if (!clipboardSupported.value) {
-      throw new Error('当前环境不支持复制');
+      throw new Error(t('task.copyNotSupported'));
     }
     await copyTaskTitle(task.title);
-    message.success('任务名称已复制');
+    message.success(t('task.taskNameCopied'));
   } catch (error: any) {
-    message.error(error?.message ?? '复制任务名称失败');
+    message.error(error?.message ?? t('task.copyTaskNameFailed'));
   }
 }
 
@@ -280,7 +283,7 @@ async function handleTaskStartWork(task: Task) {
     if (!targetWorktree) {
       targetWorktree = projectStore.worktrees.find(w => w.isMain);
       if (!targetWorktree) {
-        message.error('未找到可用的工作区分支');
+        message.error(t('task.noAvailableWorktree'));
         return;
       }
       targetWorktreeId = targetWorktree.id;
@@ -304,9 +307,9 @@ async function handleTaskStartWork(task: Task) {
       }
     }
 
-    message.success('已创建终端并更新任务状态');
+    message.success(t('task.terminalCreatedAndTaskUpdated'));
   } catch (error: any) {
-    message.error(error?.message ?? '开始工作失败');
+    message.error(error?.message ?? t('task.startWorkFailed'));
   }
 }
 </script>

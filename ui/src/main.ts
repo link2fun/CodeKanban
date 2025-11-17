@@ -5,17 +5,20 @@ import { createPinia } from 'pinia';
 
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
+import 'dayjs/locale/en';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
 import App from './App.vue';
 import router from './router';
+import i18n from './i18n';
 
 // 引入字体: 通用字体 / 等宽字体
 import 'vfonts/Lato.css';
 import 'vfonts/FiraCode.css';
 
 // 配置dayjs
-dayjs.locale('zh-cn');
+const currentLocale = localStorage.getItem('app-locale') || 'zh-CN';
+dayjs.locale(currentLocale === 'zh-CN' ? 'zh-cn' : 'en');
 dayjs.extend(relativeTime);
 
 // naive-ui 样式冲突处理
@@ -27,5 +30,6 @@ const app = createApp(App);
 
 app.use(createPinia());
 app.use(router);
+app.use(i18n);
 
 app.mount('#app');

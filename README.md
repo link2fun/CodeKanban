@@ -11,6 +11,8 @@ AI时代的辅助编程工具，帮助你提速10倍。
 
 ![预览图](docs/preview.png)
 
+[中文](README.md) | [English](README.en-US.md)
+
 [核心特性](#核心特性) • [开发指南](#开发指南) • [关于](#关于)
 
 </div>
