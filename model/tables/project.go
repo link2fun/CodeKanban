@@ -18,6 +18,7 @@ type ProjectTable struct {
 	RemoteURL        string     `gorm:"type:text" json:"remoteUrl"`
 	LastSyncAt       *time.Time `gorm:"type:datetime" json:"lastSyncAt"`
 	HidePath         bool       `gorm:"type:boolean;not null;default:false" json:"hidePath"`
+	Priority         *int64     `gorm:"type:integer" json:"priority"`
 }
 
 // TableName maps the gorm model to the projects table.

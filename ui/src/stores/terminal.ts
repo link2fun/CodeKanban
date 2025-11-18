@@ -588,6 +588,15 @@ export const useTerminalStore = defineStore('terminal', () => {
     }
   }
 
+  async function closeAllSessions(projectId: string | undefined) {
+    const resolved = ensureProjectSelected(projectId);
+    const tabs = getTabs(resolved);
+
+    // 关闭所有终端
+    const closePromises = tabs.map(tab => closeSession(resolved, tab.id));
+    await Promise.allSettled(closePromises);
+  }
+
   return {
     emitter,
     getTabs,
@@ -598,6 +607,7 @@ export const useTerminalStore = defineStore('terminal', () => {
     createSession,
     renameSession,
     closeSession,
+    closeAllSessions,
     send,
     disconnectTab,
     reorderTabs,

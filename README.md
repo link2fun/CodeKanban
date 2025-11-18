@@ -28,6 +28,7 @@ AI时代的辅助编程工具，帮助你提速10倍。
 - **编辑器集成**：快捷打开 VSCode、Cursor、Zed 等编辑器
 - **使用你喜欢的工具**: Claude Code, Codex, Gemini, Qwen Code, Droid, ... 啥都行
 
+Tips: 中文用户注意，搜狗输入法在 ClaudeCode 中兼容性不佳，在VSCode中表现也是大差不差的。不过alt+v仍然可以粘贴图片。
 
 ## 开发指南
 

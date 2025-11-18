@@ -194,6 +194,7 @@ export interface Project {
   lastSyncAt: string | null;
   name: string;
   path: string;
+  priority: number | null;
   remoteUrl: string | null;
   updatedAt: string;
   worktreeBasePath: string | null;
@@ -259,6 +260,16 @@ export interface UpdateNotePadBody {
    * 标签页名称
    */
   name?: string;
+}
+export interface UpdateProjectPriorityInputBody {
+  /**
+   * A URL to the JSON Schema for this object.
+   */
+  $schema?: string;
+  /**
+   * 项目优先级（1-5，null 表示取消置顶）
+   */
+  priority: number | null;
 }
 export interface UpdateProjectInputBody {
   /**
@@ -609,6 +620,7 @@ export interface ProjectTable {
   lastSyncAt: string | null;
   name: string;
   path: string;
+  priority: number | null;
   remoteUrl: string;
   updatedAt: string;
   worktreeBasePath: string;
@@ -1179,6 +1191,7 @@ declare global {
        *     lastSyncAt: string | null
        *     name: string
        *     path: string
+       *     priority: number | null
        *     remoteUrl: string | null
        *     updatedAt: string
        *     worktreeBasePath: string | null
@@ -1234,6 +1247,7 @@ declare global {
        *     lastSyncAt: string | null
        *     name: string
        *     path: string
+       *     priority: number | null
        *     remoteUrl: string | null
        *     updatedAt: string
        *     worktreeBasePath: string | null
@@ -1282,6 +1296,7 @@ declare global {
        *     lastSyncAt: string | null
        *     name: string
        *     path: string
+       *     priority: number | null
        *     remoteUrl: string | null
        *     updatedAt: string
        *     worktreeBasePath: string | null
@@ -1338,6 +1353,70 @@ declare global {
       /**
        * ---
        *
+       * [POST] 更新项目优先级
+       *
+       * **path:** /api/v1/projects/{id}/priority
+       *
+       * ---
+       *
+       * **Path Parameters**
+       * ```ts
+       * type PathParameters = {
+       *   id: string
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **RequestBody**
+       * ```ts
+       * type RequestBody = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 项目优先级（1-5，null 表示取消置顶）
+       *   priority: number | null
+       * }
+       * ```
+       *
+       * ---
+       *
+       * **Response**
+       * ```ts
+       * type Response = {
+       *   // A URL to the JSON Schema for this object.
+       *   $schema?: string
+       *   // 响应对象
+       *   item: {
+       *     createdAt: string
+       *     defaultBranch: string | null
+       *     deletedAt: string | null
+       *     description: string | null
+       *     hidePath: boolean
+       *     id: string
+       *     lastSyncAt: string | null
+       *     name: string
+       *     path: string
+       *     priority: number | null
+       *     remoteUrl: string | null
+       *     updatedAt: string
+       *     worktreeBasePath: string | null
+       *   }
+       * }
+       * ```
+       */
+      updatePriority<
+        Config extends Alova2MethodConfig<ItemResponseProjectBody> & {
+          pathParams: {
+            id: string;
+          };
+          data: UpdateProjectPriorityInputBody;
+        }
+      >(
+        config: Config
+      ): Alova2Method<ItemResponseProjectBody, 'project.updatePriority', Config>;
+      /**
+       * ---
+       *
        * [POST] 编辑项目
        *
        * **path:** /api/v1/projects/{id}/update
@@ -1385,6 +1464,7 @@ declare global {
        *     lastSyncAt: string | null
        *     name: string
        *     path: string
+       *     priority: number | null
        *     remoteUrl: string | null
        *     updatedAt: string
        *     worktreeBasePath: string | null
@@ -2117,6 +2197,7 @@ declare global {
        *       lastSyncAt: string | null
        *       name: string
        *       path: string
+       *       priority: number | null
        *       remoteUrl: string
        *       updatedAt: string
        *       worktreeBasePath: string
@@ -2156,6 +2237,7 @@ declare global {
        *         lastSyncAt: string | null
        *         name: string
        *         path: string
+       *         priority: number | null
        *         remoteUrl: string
        *         updatedAt: string
        *         worktreeBasePath: string
@@ -2276,6 +2358,7 @@ declare global {
        *       lastSyncAt: string | null
        *       name: string
        *       path: string
+       *       priority: number | null
        *       remoteUrl: string
        *       updatedAt: string
        *       worktreeBasePath: string
@@ -2315,6 +2398,7 @@ declare global {
        *         lastSyncAt: string | null
        *         name: string
        *         path: string
+       *         priority: number | null
        *         remoteUrl: string
        *         updatedAt: string
        *         worktreeBasePath: string
@@ -2394,6 +2478,7 @@ declare global {
        *       lastSyncAt: string | null
        *       name: string
        *       path: string
+       *       priority: number | null
        *       remoteUrl: string
        *       updatedAt: string
        *       worktreeBasePath: string
@@ -2433,6 +2518,7 @@ declare global {
        *         lastSyncAt: string | null
        *         name: string
        *         path: string
+       *         priority: number | null
        *         remoteUrl: string
        *         updatedAt: string
        *         worktreeBasePath: string
@@ -2523,6 +2609,7 @@ declare global {
        *       lastSyncAt: string | null
        *       name: string
        *       path: string
+       *       priority: number | null
        *       remoteUrl: string
        *       updatedAt: string
        *       worktreeBasePath: string
@@ -2562,6 +2649,7 @@ declare global {
        *         lastSyncAt: string | null
        *         name: string
        *         path: string
+       *         priority: number | null
        *         remoteUrl: string
        *         updatedAt: string
        *         worktreeBasePath: string
@@ -2694,6 +2782,7 @@ declare global {
        *       lastSyncAt: string | null
        *       name: string
        *       path: string
+       *       priority: number | null
        *       remoteUrl: string
        *       updatedAt: string
        *       worktreeBasePath: string
@@ -2733,6 +2822,7 @@ declare global {
        *         lastSyncAt: string | null
        *         name: string
        *         path: string
+       *         priority: number | null
        *         remoteUrl: string
        *         updatedAt: string
        *         worktreeBasePath: string
@@ -2834,6 +2924,7 @@ declare global {
        *       lastSyncAt: string | null
        *       name: string
        *       path: string
+       *       priority: number | null
        *       remoteUrl: string
        *       updatedAt: string
        *       worktreeBasePath: string
@@ -2873,6 +2964,7 @@ declare global {
        *         lastSyncAt: string | null
        *         name: string
        *         path: string
+       *         priority: number | null
        *         remoteUrl: string
        *         updatedAt: string
        *         worktreeBasePath: string
@@ -3405,6 +3497,7 @@ declare global {
        *         lastSyncAt: string | null
        *         name: string
        *         path: string
+       *         priority: number | null
        *         remoteUrl: string
        *         updatedAt: string
        *         worktreeBasePath: string
@@ -3444,6 +3537,7 @@ declare global {
        *           lastSyncAt: string | null
        *           name: string
        *           path: string
+       *           priority: number | null
        *           remoteUrl: string
        *           updatedAt: string
        *           worktreeBasePath: string
@@ -3545,6 +3639,7 @@ declare global {
        *         lastSyncAt: string | null
        *         name: string
        *         path: string
+       *         priority: number | null
        *         remoteUrl: string
        *         updatedAt: string
        *         worktreeBasePath: string
@@ -3584,6 +3679,7 @@ declare global {
        *           lastSyncAt: string | null
        *           name: string
        *           path: string
+       *           priority: number | null
        *           remoteUrl: string
        *           updatedAt: string
        *           worktreeBasePath: string

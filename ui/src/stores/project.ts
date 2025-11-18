@@ -8,6 +8,9 @@ import type { EditorPreference } from '@/stores/settings';
 const RECENT_PROJECTS_KEY = 'recent_projects';
 const DEFAULT_MAX_RECENT_PROJECTS = 10;
 
+// 优先级类型定义：1-5级，数字越大优先级越高
+export type ProjectPriority = 1 | 2 | 3 | 4 | 5;
+
 export const useProjectStore = defineStore('project', () => {
   const projects = ref<Project[]>([]);
   const currentProject = ref<Project | null>(null);
@@ -38,9 +41,35 @@ export const useProjectStore = defineStore('project', () => {
   });
 
   const recentProjects = computed(() => {
-    return recentProjectIds.value
+    const projectList = recentProjectIds.value
       .map(id => projects.value.find(p => p.id === id))
       .filter((p): p is Project => p !== undefined);
+
+    // 按照优先级排序：优先级高的在前，没有优先级的保持原顺序在后
+    return projectList.sort((a, b) => {
+      const priorityA = a.priority;
+      const priorityB = b.priority;
+
+      // 如果两个都有优先级，按优先级降序排列
+      if (priorityA && priorityB) {
+        return priorityB - priorityA;
+      }
+
+      // 如果只有A有优先级，A排在前面
+      if (priorityA && !priorityB) {
+        return -1;
+      }
+
+      // 如果只有B有优先级，B排在前面
+      if (!priorityA && priorityB) {
+        return 1;
+      }
+
+      // 两个都没有优先级，保持原顺序（通过在原数组中的索引）
+      const indexA = recentProjectIds.value.indexOf(a.id);
+      const indexB = recentProjectIds.value.indexOf(b.id);
+      return indexA - indexB;
+    });
   });
 
   watch(worktrees, list => {
@@ -168,6 +197,32 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
+  function removeRecentProject(projectId: string) {
+    const index = recentProjectIds.value.indexOf(projectId);
+    if (index > -1) {
+      recentProjectIds.value.splice(index, 1);
+      saveRecentProjectIds(recentProjectIds.value);
+    }
+  }
+
+  function getProjectPriority(projectId: string): ProjectPriority | null {
+    const project = projects.value.find(p => p.id === projectId);
+    return (project?.priority as ProjectPriority | null) ?? null;
+  }
+
+  function updateProjectInList(updatedProject: Project) {
+    // 更新项目列表中的项目
+    const index = projects.value.findIndex(p => p.id === updatedProject.id);
+    if (index !== -1) {
+      projects.value[index] = updatedProject;
+    }
+
+    // 如果是当前项目，也更新当前项目
+    if (currentProject.value?.id === updatedProject.id) {
+      currentProject.value = updatedProject;
+    }
+  }
+
   return {
     projects,
     currentProject,
@@ -190,6 +245,9 @@ export const useProjectStore = defineStore('project', () => {
     openInExplorer,
     openInEditor,
     addRecentProject,
+    removeRecentProject,
+    getProjectPriority,
+    updateProjectInList,
     setSelectedWorktree,
   };
 });

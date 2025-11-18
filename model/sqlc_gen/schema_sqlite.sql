@@ -14,7 +14,7 @@ CREATE INDEX "idx_access_tokens_user_id" ON "user_access_tokens"("user_id");
 CREATE INDEX "idx_user_access_tokens_deleted_at" ON "user_access_tokens"("deleted_at");
 
 
-CREATE TABLE "projects" ("id" text NOT NULL,"created_at" datetime,"updated_at" datetime,"deleted_at" datetime,"name" text NOT NULL,"path" text NOT NULL,"description" text,"default_branch" text,"worktree_base_path" text,"remote_url" text,"last_sync_at" datetime,"hide_path" boolean NOT NULL DEFAULT false,PRIMARY KEY ("id"));
+CREATE TABLE "projects" ("id" text NOT NULL,"created_at" datetime,"updated_at" datetime,"deleted_at" datetime,"name" text NOT NULL,"path" text NOT NULL,"description" text,"default_branch" text,"worktree_base_path" text,"remote_url" text,"last_sync_at" datetime,"hide_path" boolean NOT NULL DEFAULT false,"priority" integer,PRIMARY KEY ("id"));
 CREATE UNIQUE INDEX "idx_projects_path" ON "projects"("path");
 CREATE INDEX "idx_projects_name" ON "projects"("name");
 CREATE INDEX "idx_projects_deleted_at" ON "projects"("deleted_at");

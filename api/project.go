@@ -32,6 +32,13 @@ type updateProjectInput struct {
 	}
 }
 
+type updateProjectPriorityInput struct {
+	ID   string `path:"id"`
+	Body struct {
+		Priority *int64 `json:"priority" doc:"项目优先级（1-5，null 表示取消置顶）"`
+	}
+}
+
 func registerProjectRoutes(group *huma.Group) {
 	service := model.NewProjectService()
 
@@ -144,6 +151,28 @@ func registerProjectRoutes(group *huma.Group) {
 	}, func(op *huma.Operation) {
 		op.OperationID = "project-update"
 		op.Summary = "编辑项目"
+		op.Tags = []string{projectTag}
+	})
+
+	huma.Post(group, "/projects/{id}/priority", func(ctx context.Context, input *updateProjectPriorityInput) (*h.ItemResponse[model.Project], error) {
+		project, err := service.UpdateProjectPriority(ctx, input.ID, input.Body.Priority)
+		if err != nil {
+			switch {
+			case errors.Is(err, model.ErrDBNotInitialized):
+				return nil, huma.Error503ServiceUnavailable("database is not initialized")
+			case errors.Is(err, model.ErrProjectNotFound):
+				return nil, huma.Error404NotFound("project not found")
+			default:
+				return nil, huma.Error500InternalServerError("failed to update project priority", err)
+			}
+		}
+
+		resp := h.NewItemResponse(*project)
+		resp.Status = http.StatusOK
+		return resp, nil
+	}, func(op *huma.Operation) {
+		op.OperationID = "project-update-priority"
+		op.Summary = "更新项目优先级"
 		op.Tags = []string{projectTag}
 	})
 

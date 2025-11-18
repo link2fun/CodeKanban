@@ -44,10 +44,64 @@
       </template>
     </n-page-header>
 
+    <!-- 搜索和排序工具栏 -->
+    <div class="search-toolbar">
+      <n-input
+        v-model:value="searchQuery"
+        :placeholder="t('project.searchPlaceholder')"
+        clearable
+        style="max-width: 400px; flex: 1; min-width: 200px"
+      >
+        <template #prefix>
+          <n-icon><SearchOutline /></n-icon>
+        </template>
+      </n-input>
+      <n-space align="center" :wrap="false">
+        <n-select
+          v-model:value="sortType"
+          :options="sortTypeOptions"
+          :placeholder="t('project.sortBy')"
+          style="width: 150px"
+        />
+        <n-tooltip :disabled="!sortType">
+          <template #trigger>
+            <n-button
+              quaternary
+              circle
+              :disabled="!sortType"
+              @click="toggleSortOrder"
+            >
+              <template #icon>
+                <n-icon size="20">
+                  <ArrowDownOutline v-if="sortOrder === 'desc'" />
+                  <ArrowUpOutline v-else />
+                </n-icon>
+              </template>
+            </n-button>
+          </template>
+          {{ sortOrder === 'desc' ? t('project.descending') : t('project.ascending') }}
+        </n-tooltip>
+        <n-popover trigger="hover" placement="bottom">
+          <template #trigger>
+            <n-checkbox v-model:checked="respectPriority" />
+          </template>
+          <div style="max-width: 300px">
+            <div style="font-weight: 500; margin-bottom: 4px">{{ t('project.respectPriority') }}</div>
+            <div style="font-size: 13px; color: var(--n-text-color-2)">{{ t('project.respectPriorityHint') }}</div>
+          </div>
+        </n-popover>
+      </n-space>
+    </div>
+
     <n-spin :show="projectStore.loading">
-      <div v-if="projectStore.projects.length > 0" class="project-grid">
+      <transition-group
+        v-if="filteredAndSortedProjects.length > 0"
+        name="project-list"
+        tag="div"
+        class="project-grid"
+      >
         <n-card
-          v-for="project in projectStore.projects"
+          v-for="project in filteredAndSortedProjects"
           :key="project.id"
           hoverable
           class="project-card"
@@ -56,10 +110,10 @@
           <template #header>
             <n-space justify="space-between" align="center">
               <n-ellipsis style="max-width: 240px">
-                {{ project.name }}
+                <span v-html="highlightText(project.name)"></span>
               </n-ellipsis>
               <n-dropdown :options="getCardActions(project)" @select="onCardSelect">
-                <n-button text>
+                <n-button text @click.stop>
                   <n-icon size="20"><EllipsisHorizontalOutline /></n-icon>
                 </n-button>
               </n-dropdown>
@@ -69,12 +123,10 @@
           <n-space vertical size="small">
             <n-text v-if="!project.hidePath" depth="3">
               <n-icon size="16"><FolderOutline /></n-icon>
-              <span class="path-text">
-                {{ project.path }}
-              </span>
+              <span class="path-text" v-html="highlightText(project.path)"></span>
             </n-text>
             <n-text v-if="project.description" depth="3">
-              {{ project.description }}
+              <span v-html="highlightText(project.description)"></span>
             </n-text>
             <n-divider style="margin: 8px 0" />
             <n-space size="small">
@@ -95,12 +147,32 @@
                 </template>
                 {{ terminalCounts.get(project.id) }}
               </n-tag>
+              <n-tag
+                v-if="project.priority"
+                size="small"
+                :bordered="false"
+                :color="{ color: getPriorityTagColor(project.priority), textColor: '#fff' }"
+              >
+                <template #icon>
+                  <n-icon size="16">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                      <path
+                        fill="currentColor"
+                        d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z"
+                      />
+                    </svg>
+                  </n-icon>
+                </template>
+                {{ getPriorityLabel(project.priority) }}
+              </n-tag>
             </n-space>
           </n-space>
         </n-card>
-      </div>
+      </transition-group>
       <div v-else class="empty-container">
-        <n-empty :description="t('project.noProjects')" />
+        <n-empty
+          :description="searchQuery ? t('common.noData') : t('project.noProjects')"
+        />
       </div>
     </n-spin>
 
@@ -127,6 +199,9 @@ import {
   SettingsOutline,
   BookOutline,
   TerminalOutline,
+  SearchOutline,
+  ArrowDownOutline,
+  ArrowUpOutline,
 } from '@vicons/ionicons5';
 import ProjectCreateDialog from '@/components/project/ProjectCreateDialog.vue';
 import ProjectEditDialog from '@/components/project/ProjectEditDialog.vue';
@@ -136,6 +211,9 @@ import { useTerminalStore } from '@/stores/terminal';
 import { useAppStore } from '@/stores/app';
 import { useLocale } from '@/composables/useLocale';
 import type { Project } from '@/types/models';
+import Apis from '@/api';
+import { useReq } from '@/api';
+import type { ProjectPriority } from '@/stores/project';
 
 const appStore = useAppStore();
 const { t } = useLocale();
@@ -152,6 +230,115 @@ const showEditDialog = ref(false);
 const editingProject = ref<Project | null>(null);
 
 const terminalCounts = terminalStore.terminalCounts;
+
+// 使用 useReq 定义优先级更新请求
+const { send: updatePriority, loading: priorityLoading } = useReq(
+  (projectId: string, priority: number | null) => Apis.project.updatePriority({
+    pathParams: { id: projectId },
+    data: { priority }
+  })
+);
+
+// 搜索和排序
+const searchQuery = ref('');
+const sortType = ref<'name' | 'created' | 'updated' | 'accessed'>('accessed'); // 默认按访问时间
+const sortOrder = ref<'asc' | 'desc'>('desc'); // 默认降序
+const respectPriority = ref(true); // 默认尊重优先级
+
+type SortType = 'name' | 'created' | 'updated' | 'accessed';
+
+const sortTypeOptions = computed(() => [
+  { label: t('project.sortByAccessed'), value: 'accessed' },
+  { label: t('project.sortByName'), value: 'name' },
+  { label: t('project.sortByCreated'), value: 'created' },
+  { label: t('project.sortByUpdated'), value: 'updated' },
+]);
+
+// 切换排序顺序
+function toggleSortOrder() {
+  sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+}
+
+// 高亮搜索关键字
+function highlightText(text: string | null | undefined): string {
+  if (!text) return '';
+  if (!searchQuery.value) return text;
+
+  const query = searchQuery.value.trim();
+  if (!query) return text;
+
+  // 转义正则表达式特殊字符
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escapedQuery})`, 'gi');
+
+  return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+}
+
+// 获取项目访问顺序索引（用于访问时间排序）
+function getAccessIndex(projectId: string): number {
+  const recentIds = projectStore.recentProjects.map(p => p.id);
+  const index = recentIds.indexOf(projectId);
+  // 如果项目在最近访问列表中，返回其索引
+  // 如果不在列表中，返回一个很大的数（表示从未访问或很久未访问）
+  return index >= 0 ? index : Number.MAX_SAFE_INTEGER;
+}
+
+// 过滤和排序后的项目列表
+const filteredAndSortedProjects = computed(() => {
+  let projects = [...projectStore.projects];
+
+  // 过滤
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    projects = projects.filter(project => {
+      const nameMatch = project.name.toLowerCase().includes(query);
+      const pathMatch = project.path.toLowerCase().includes(query);
+      const descMatch = project.description?.toLowerCase().includes(query);
+      return nameMatch || pathMatch || descMatch;
+    });
+  }
+
+  // 排序
+  projects.sort((a, b) => {
+    // 如果尊重优先级，先按优先级排序
+    if (respectPriority.value) {
+      const priorityA = projectStore.getProjectPriority(a.id) ?? 0;
+      const priorityB = projectStore.getProjectPriority(b.id) ?? 0;
+
+      // 优先级高的排在前面（数字大的优先级高）
+      if (priorityA !== priorityB) {
+        return priorityB - priorityA;
+      }
+    }
+
+    // 优先级相同时，按选定的排序方式排序
+    if (sortType.value) {
+      let comparison = 0;
+
+      switch (sortType.value as SortType) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'created':
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        case 'updated':
+          comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+          break;
+        case 'accessed':
+          // 访问时间排序：索引越小表示越近访问，所以用 b - a（降序时最近的在前）
+          comparison = getAccessIndex(b.id) - getAccessIndex(a.id);
+          break;
+      }
+
+      return sortOrder.value === 'asc' ? comparison : -comparison;
+    }
+
+    return 0;
+  });
+
+  return projects;
+});
 
 onMounted(() => {
   projectStore.fetchProjects();
@@ -179,11 +366,46 @@ function goToGuide() {
 type ProjectOption = DropdownOption & { project: Project };
 
 function getCardActions(project: Project): ProjectOption[] {
+  const isPinned = project.priority !== null && project.priority !== undefined;
+
   return [
     { label: t('project.openProject'), key: 'open', project } as ProjectOption,
     { label: t('common.edit'), key: 'edit', project } as ProjectOption,
+    { type: 'divider', key: 'd1' } as any,
+    {
+      label: isPinned ? t('project.unpinProject') : t('project.pinProject'),
+      key: 'toggle-pin',
+      project
+    } as ProjectOption,
+    {
+      label: t('project.setPriority'),
+      key: 'priority',
+      children: [
+        { label: t('project.priority5'), key: 'priority-5', project } as ProjectOption,
+        { label: t('project.priority4'), key: 'priority-4', project } as ProjectOption,
+        { label: t('project.priority3'), key: 'priority-3', project } as ProjectOption,
+        { label: t('project.priority2'), key: 'priority-2', project } as ProjectOption,
+        { label: t('project.priority1'), key: 'priority-1', project } as ProjectOption,
+      ]
+    } as any,
+    { type: 'divider', key: 'd2' } as any,
     { label: t('common.delete'), key: 'delete', project } as ProjectOption,
   ];
+}
+
+// 处理优先级更新的辅助函数
+async function handleSetPriority(projectId: string, priority: number | null) {
+  try {
+    const result = await updatePriority(projectId, priority);
+    // Apis 返回的结果包含 item 字段
+    if (result?.item) {
+      // 更新 Store 中的状态
+      projectStore.updateProjectInList(result.item);
+    }
+  } catch (error) {
+    console.error('Failed to update project priority:', error);
+    message.error(t('message.operationFailed'));
+  }
 }
 
 function handleAction(action: string, project: Project) {
@@ -193,6 +415,12 @@ function handleAction(action: string, project: Project) {
     openEditDialog(project);
   } else if (action === 'delete') {
     confirmDelete(project);
+  } else if (action === 'toggle-pin') {
+    const isPinned = project.priority !== null && project.priority !== undefined;
+    handleSetPriority(project.id, isPinned ? null : 5);
+  } else if (action.startsWith('priority-')) {
+    const priority = parseInt(action.split('-')[1]) as ProjectPriority;
+    handleSetPriority(project.id, priority);
   }
 }
 
@@ -233,6 +461,21 @@ async function handleProjectCreated(project?: Project) {
 async function handleProjectUpdated() {
   await projectStore.fetchProjects();
 }
+
+function getPriorityTagColor(priority: number): string {
+  const colorMap: Record<number, string> = {
+    5: '#e74c3c', // 红色 - 最高优先级
+    4: '#ff9800', // 橙色
+    3: '#ffc107', // 黄色
+    2: '#4caf50', // 绿色
+    1: '#2196f3', // 蓝色 - 最低优先级
+  };
+  return colorMap[priority] || '#999';
+}
+
+function getPriorityLabel(priority: number): string {
+  return t('project.priorityLevel', { level: priority });
+}
 </script>
 
 <style scoped>
@@ -240,6 +483,52 @@ async function handleProjectUpdated() {
   padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.search-toolbar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+/* 搜索关键字高亮 */
+:deep(.search-highlight) {
+  background-color: #ffd60a;
+  color: #000;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+/* 深色模式下的高亮样式 */
+@media (prefers-color-scheme: dark) {
+  :deep(.search-highlight) {
+    background-color: #ffc107;
+    color: #000;
+  }
+}
+
+/* 项目卡片过渡动画 */
+.project-list-move,
+.project-list-enter-active,
+.project-list-leave-active {
+  transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
+}
+
+.project-list-enter-from {
+  opacity: 0;
+  transform: scale(0.8) translateY(30px);
+}
+
+.project-list-leave-to {
+  opacity: 0;
+  transform: scale(0.8) translateY(-30px);
+}
+
+.project-list-leave-active {
+  position: absolute;
 }
 
 .title-wrapper {

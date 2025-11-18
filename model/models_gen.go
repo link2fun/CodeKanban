@@ -21,6 +21,7 @@ type Project struct {
 	RemoteUrl        *string    `db:"remote_url" json:"remoteUrl"`
 	LastSyncAt       *time.Time `db:"last_sync_at" json:"lastSyncAt"`
 	HidePath         bool       `db:"hide_path" json:"hidePath"`
+	Priority         *int64     `db:"priority" json:"priority"`
 }
 
 type User struct {

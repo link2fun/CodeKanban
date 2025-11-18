@@ -264,6 +264,32 @@ func (s *ProjectService) UpdateProject(ctx context.Context, id string, params Up
 	return project, nil
 }
 
+// UpdateProjectPriority updates the priority value of a project.
+func (s *ProjectService) UpdateProjectPriority(ctx context.Context, id string, priority *int64) (*Project, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	q, err := resolveQueries(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	project, err := q.ProjectUpdatePriority(ctx, &ProjectUpdatePriorityParams{
+		UpdatedAt: time.Now(),
+		Priority:  priority,
+		Id:        id,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrProjectNotFound
+		}
+		return nil, err
+	}
+
+	return project, nil
+}
+
 func (s *ProjectService) dispatchWorktreeSync(ctx context.Context, projectID string, repo *git.GitRepo) {
 	if repo == nil {
 		return

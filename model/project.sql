@@ -17,7 +17,8 @@ INSERT INTO projects (
   worktree_base_path,
   remote_url,
   hide_path,
-  last_sync_at
+  last_sync_at,
+  priority
 ) VALUES (
   @id,
   @created_at,
@@ -29,7 +30,8 @@ INSERT INTO projects (
   @worktree_base_path,
   @remote_url,
   @hide_path,
-  @last_sync_at
+  @last_sync_at,
+  @priority
 ) RETURNING *;
 
 -- name: ProjectList :many
@@ -55,3 +57,12 @@ SET
   updated_at = @updated_at
 WHERE id = @id
   AND deleted_at IS NULL;
+
+-- name: ProjectUpdatePriority :one
+UPDATE projects
+SET
+  updated_at = @updated_at,
+  priority = @priority
+WHERE id = @id
+  AND deleted_at IS NULL
+RETURNING *;

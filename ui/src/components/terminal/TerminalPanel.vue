@@ -1057,3 +1057,10 @@ defineExpose({
   }
 }
 </style>
+
+<style scoped>
+/* 隐藏终端tab上下 */
+.n-tabs.n-tabs--top .n-tab-pane  {
+  padding: 0 !important;
+}
+</style>

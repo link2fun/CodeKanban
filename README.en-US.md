@@ -9,7 +9,7 @@ An auxiliary programming tool for the AI era, helping you speed up 10x.
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript)
 ![License](https://img.shields.io/badge/license-Apache--2.0-green)
 
-![Preview](docs/preview.png)
+![Preview](docs/preview-en.png)
 
 [English](README.en-US.md) | [简体中文](README.md)
 

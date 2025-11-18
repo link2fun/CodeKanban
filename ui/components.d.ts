@@ -67,6 +67,7 @@ declare module 'vue' {
     NOl: typeof import('naive-ui')['NOl']
     NotePad: typeof import('./src/components/notepad/NotePad.vue')['default']
     NPageHeader: typeof import('naive-ui')['NPageHeader']
+    NPopover: typeof import('naive-ui')['NPopover']
     NRadio: typeof import('naive-ui')['NRadio']
     NRadioGroup: typeof import('naive-ui')['NRadioGroup']
     NScrollbar: typeof import('naive-ui')['NScrollbar']

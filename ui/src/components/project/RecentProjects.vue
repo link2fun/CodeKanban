@@ -46,7 +46,23 @@
           class="project-item"
           :class="{ active: project.id === currentProjectId }"
           @click="handleSelectProject(project.id)"
+          @contextmenu="handleContextMenu($event, project.id)"
         >
+          <n-icon
+            v-if="projectStore.getProjectPriority(project.id)"
+            size="12"
+            :color="getPriorityColor(projectStore.getProjectPriority(project.id)!)"
+            class="pin-icon-corner"
+            :title="t('project.unpinProject')"
+            @click.stop="handleUnpinProject(project.id)"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z"
+              />
+            </svg>
+          </n-icon>
           <div class="project-info">
             <div class="project-name-row">
               <n-tag
@@ -80,6 +96,16 @@
         </div>
       </TransitionGroup>
     </div>
+    <n-dropdown
+      placement="bottom-start"
+      trigger="manual"
+      :x="contextMenu.x"
+      :y="contextMenu.y"
+      :options="contextMenuOptions"
+      :show="contextMenu.show"
+      :on-clickoutside="handleClickOutside"
+      @select="handleContextMenuSelect"
+    />
     <div class="version-info-container">
       <a
         class="version-info"
@@ -96,15 +122,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useDialog } from 'naive-ui';
 import { useProjectStore } from '@/stores/project';
 import { useTerminalStore } from '@/stores/terminal';
 import { useAppStore } from '@/stores/app';
 import { CreateOutline, SettingsOutline, TerminalOutline } from '@vicons/ionicons5';
 import { useLocale } from '@/composables/useLocale';
+import type { ProjectPriority } from '@/stores/project';
+import type { DropdownOption } from 'naive-ui';
+import Apis from '@/api';
+import { useReq } from '@/api';
 
 const { t } = useLocale();
+const dialog = useDialog();
+
+interface ContextMenuState {
+  show: boolean;
+  x: number;
+  y: number;
+  projectId: string | null;
+}
 
 const emit = defineEmits<{ editCurrent: []; toggleTerminal: [] }>();
 const props = defineProps<{
@@ -121,9 +160,191 @@ const currentProject = computed(() => projectStore.currentProject);
 const recentProjects = computed(() => projectStore.recentProjects);
 const terminalCounts = terminalStore.terminalCounts;
 
+const contextMenu = ref<ContextMenuState>({
+  show: false,
+  x: 0,
+  y: 0,
+  projectId: null,
+});
+
+// 使用 useReq 定义优先级更新请求
+const { send: updatePriority, loading: priorityLoading } = useReq(
+  (projectId: string, priority: number | null) => Apis.project.updatePriority({
+    pathParams: { id: projectId },
+    data: { priority }
+  })
+);
+
 const handleSelectProject = (projectId: string) => {
   if (projectId !== props.currentProjectId) {
     router.push({ name: 'project', params: { id: projectId } });
+  }
+};
+
+const handleContextMenu = (e: MouseEvent, projectId: string) => {
+  e.preventDefault();
+  contextMenu.value = {
+    show: false,
+    x: e.clientX,
+    y: e.clientY,
+    projectId,
+  };
+  // 使用 nextTick 确保在 DOM 更新后显示菜单
+  setTimeout(() => {
+    contextMenu.value.show = true;
+  }, 0);
+};
+
+const handleClickOutside = () => {
+  contextMenu.value.show = false;
+};
+
+const contextMenuOptions = computed<DropdownOption[]>(() => {
+  if (!contextMenu.value.projectId) return [];
+
+  const projectId = contextMenu.value.projectId;
+  const currentPriority = projectStore.getProjectPriority(projectId);
+  const isPinned = currentPriority !== null;
+  const hasTerminals = terminalCounts.get(projectId) && terminalCounts.get(projectId)! > 0;
+
+  return [
+    {
+      label: t('project.edit'),
+      key: 'edit',
+    },
+    {
+      type: 'divider',
+      key: 'd1',
+    },
+    {
+      label: isPinned ? t('project.unpinProject') : t('project.pinProject'),
+      key: 'toggle-pin',
+    },
+    {
+      label: t('project.setPriority'),
+      key: 'priority',
+      children: [
+        {
+          label: t('project.priority5'),
+          key: 'priority-5',
+        },
+        {
+          label: t('project.priority4'),
+          key: 'priority-4',
+        },
+        {
+          label: t('project.priority3'),
+          key: 'priority-3',
+        },
+        {
+          label: t('project.priority2'),
+          key: 'priority-2',
+        },
+        {
+          label: t('project.priority1'),
+          key: 'priority-1',
+        },
+      ],
+    },
+    {
+      type: 'divider',
+      key: 'd2',
+    },
+    {
+      label: t('project.closeAllTerminals'),
+      key: 'close-all-terminals',
+      disabled: !hasTerminals,
+    },
+    {
+      type: 'divider',
+      key: 'd3',
+    },
+    {
+      label: t('project.removeFromRecent'),
+      key: 'remove',
+    },
+  ];
+});
+
+// 处理优先级更新的辅助函数
+const handleSetPriority = async (projectId: string, priority: number | null) => {
+  try {
+    const result = await updatePriority(projectId, priority);
+
+    // Apis 返回的结果包含 item 字段
+    if (result?.item) {
+      // 更新 Store 中的状态（Store 只负责存储，不调用 API）
+      projectStore.updateProjectInList(result.item);
+    }
+  } catch (error) {
+    console.error('Failed to update project priority:', error);
+  }
+};
+
+const handleContextMenuSelect = async (key: string) => {
+  const projectId = contextMenu.value.projectId;
+  if (!projectId) return;
+
+  contextMenu.value.show = false;
+
+  switch (key) {
+    case 'edit':
+      if (projectId === props.currentProjectId) {
+        emit('editCurrent');
+      } else {
+        // 如果不是当前项目，先切换到该项目
+        router.push({ name: 'project', params: { id: projectId } }).then(() => {
+          emit('editCurrent');
+        });
+      }
+      break;
+    case 'toggle-pin':
+      if (projectStore.getProjectPriority(projectId)) {
+        await handleSetPriority(projectId, null);
+      } else {
+        await handleSetPriority(projectId, 5);
+      }
+      break;
+    case 'priority-5':
+      await handleSetPriority(projectId, 5);
+      break;
+    case 'priority-4':
+      await handleSetPriority(projectId, 4);
+      break;
+    case 'priority-3':
+      await handleSetPriority(projectId, 3);
+      break;
+    case 'priority-2':
+      await handleSetPriority(projectId, 2);
+      break;
+    case 'priority-1':
+      await handleSetPriority(projectId, 1);
+      break;
+    case 'close-all-terminals':
+      {
+        const terminalCount = terminalCounts.get(projectId) || 0;
+        const project = projectStore.projects.find(p => p.id === projectId);
+        dialog.warning({
+          title: t('project.closeAllTerminals'),
+          content: t('project.closeAllTerminalsConfirm', {
+            count: terminalCount,
+            name: project?.name || '',
+          }),
+          positiveText: t('common.confirm'),
+          negativeText: t('common.cancel'),
+          onPositiveClick: async () => {
+            try {
+              await terminalStore.closeAllSessions(projectId);
+            } catch (error) {
+              console.error('Failed to close all terminals:', error);
+            }
+          },
+        });
+      }
+      break;
+    case 'remove':
+      projectStore.removeRecentProject(projectId);
+      break;
   }
 };
 
@@ -140,6 +361,21 @@ const handleBackToList = () => {
 
 const handleGoToSettings = () => {
   router.push({ name: 'settings' });
+};
+
+const getPriorityColor = (priority: ProjectPriority): string => {
+  const colorMap: Record<ProjectPriority, string> = {
+    5: '#e74c3c', // 红色 - 最高优先级
+    4: '#ff9800', // 橙色
+    3: '#ffc107', // 黄色
+    2: '#4caf50', // 绿色
+    1: '#2196f3', // 蓝色 - 最低优先级
+  };
+  return colorMap[priority];
+};
+
+const handleUnpinProject = async (projectId: string) => {
+  await handleSetPriority(projectId, null);
 };
 
 onMounted(() => {
@@ -175,6 +411,7 @@ onMounted(() => {
 }
 
 .project-item {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -240,6 +477,23 @@ onMounted(() => {
 .terminal-tag.clickable:hover {
   opacity: 0.8;
   transform: scale(1.05);
+}
+
+.pin-icon-corner {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 1;
+  pointer-events: auto;
+  opacity: 0.85;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.pin-icon-corner:hover {
+  opacity: 1;
+  transform: scale(1.2);
 }
 
 /* 过渡动画 */

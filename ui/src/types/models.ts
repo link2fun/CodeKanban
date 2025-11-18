@@ -7,6 +7,7 @@ export interface Project {
   worktreeBasePath: string | null;
   remoteUrl: string | null;
   hidePath: boolean;
+  priority: number | null;
   createdAt: string;
   updatedAt: string;
 }

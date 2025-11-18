@@ -27,6 +27,7 @@ export default {
   'project.create': ['POST', '/api/v1/projects/create'],
   'project.getById': ['GET', '/api/v1/projects/{id}'],
   'project.delete': ['POST', '/api/v1/projects/{id}/delete'],
+  'project.updatePriority': ['POST', '/api/v1/projects/{id}/priority'],
   'project.update': ['POST', '/api/v1/projects/{id}/update'],
   'branch.list': ['GET', '/api/v1/projects/{projectId}/branches'],
   'branch.create': ['POST', '/api/v1/projects/{projectId}/branches/create'],

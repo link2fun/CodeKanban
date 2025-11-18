@@ -52,6 +52,15 @@ export const projectApi = {
   async delete(id: string): Promise<void> {
     await http.Post(`/projects/${id}/delete`, {}).send();
   },
+
+  async updatePriority(id: string, priority: number | null): Promise<Project> {
+    const body =
+      (await http.Post<ItemResponse<Project>>(`/projects/${id}/priority`, { priority }).send()) ?? {};
+    if (!body.item) {
+      throw new Error('failed to update project priority');
+    }
+    return body.item;
+  },
 };
 
 export const worktreeApi = {
