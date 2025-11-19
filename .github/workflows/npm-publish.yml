@@ -58,6 +58,10 @@ jobs:
           echo "VERSION=${TAG_VERSION}" >> $GITHUB_OUTPUT
           echo "Publishing version: ${TAG_VERSION}"
 
+      - name: Install frontend dependencies
+        run: |
+          cd ui && pnpm install
+
       - name: Build multi-platform packages
         run: |
           python3 build-npm-multipackage.py --version ${{ steps.version.outputs.VERSION }} --package-name "codekanban"
