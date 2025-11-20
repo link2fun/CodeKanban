@@ -96,9 +96,9 @@ func ReadConfig() *AppConfig {
 	fmt.Printf("Data directory: %s\n", dataDir)
 	fmt.Println()
 
-	// 确保数据目录存在
+	// Ensure data directory exists
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
-		fmt.Printf("创建数据目录失败: %v\n", err)
+		fmt.Printf("Failed to create data directory: %v\n", err)
 	}
 
 	defaults := AppConfig{
@@ -150,7 +150,7 @@ func ReadConfig() *AppConfig {
 
 	provider := file.Provider(configPath)
 	if err := configStore.Load(provider, yaml.Parser()); err != nil {
-		fmt.Printf("读取配置失败: %v\n", err)
+		fmt.Printf("Failed to read config: %v\n", err)
 		if os.IsNotExist(err) {
 			WriteConfigToPath(&defaults, configPath)
 		} else {
@@ -160,11 +160,11 @@ func ReadConfig() *AppConfig {
 
 	config := defaults
 	if err := configStore.Unmarshal("", &config); err != nil {
-		fmt.Printf("解析配置失败: %v\n", err)
+		fmt.Printf("Failed to parse config: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Normalize derived values to avoid重复计算.
+	// Normalize derived values to avoid redundant calculations.
 	_ = config.Terminal.IdleDuration()
 
 	if config.PrintConfig {
@@ -181,7 +181,7 @@ func WriteConfig(config *AppConfig) {
 	WriteConfigToPath(config, configPath)
 }
 
-// WriteConfigToPath 将配置写入指定路径
+// WriteConfigToPath writes configuration to specified path
 func WriteConfigToPath(config *AppConfig, path string) {
 	if config != nil {
 		lo.Must0(configStore.Load(structs.Provider(config, "yaml"), nil))
@@ -189,11 +189,11 @@ func WriteConfigToPath(config *AppConfig, path string) {
 
 	content, err := yaml.Parser().Marshal(configStore.Raw())
 	if err != nil {
-		fmt.Println("写入配置失败: 序列化错误")
+		fmt.Println("Failed to write config: serialization error")
 		return
 	}
 
 	if err := os.WriteFile(path, content, 0o644); err != nil {
-		fmt.Printf("写入配置失败: 无法写入文件 %s\n", path)
+		fmt.Printf("Failed to write config: cannot write file %s\n", path)
 	}
 }

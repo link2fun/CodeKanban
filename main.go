@@ -24,11 +24,13 @@ var runningAsService bool
 
 func main() {
 	var opts struct {
-		Version      bool `short:"v" long:"version" description:"显示版本信息"`
-		Install      bool `short:"i" long:"install" description:"安装为系统服务"`
-		Uninstall    bool `long:"uninstall" description:"卸载系统服务"`
-		ForceMigrate bool `short:"m" long:"migrate" description:"强制执行数据库迁移"`
-		UseHomeData  bool `short:"H" long:"home-data" description:"使用用户目录存储数据 (~/.codekanban)"`
+		Version      bool   `short:"v" long:"version" description:"Show version information"`
+		Install      bool   `short:"i" long:"install" description:"Install as system service"`
+		Uninstall    bool   `long:"uninstall" description:"Uninstall system service"`
+		ForceMigrate bool   `short:"m" long:"migrate" description:"Force database migration"`
+		UseHomeData  bool   `short:"H" long:"home-data" description:"Use home directory for data storage (~/.codekanban)"`
+		Bind         string `short:"b" long:"bind" description:"Bind(host) address (default: 127.0.0.1)"`
+		Port         int    `short:"p" long:"port" description:"Server port (default: 3007)"`
 	}
 
 	if _, err := flags.ParseArgs(&opts, os.Args); err != nil {
@@ -55,10 +57,10 @@ func main() {
 		utils.SetUseHomeData(true)
 	}
 
-	run(opts.ForceMigrate)
+	run(opts.ForceMigrate, opts.Bind, opts.Port)
 }
 
-func run(forceMigrate bool) {
+func run(forceMigrate bool, bind string, port int) {
 	// 异步检查版本更新（不阻塞启动）
 	checker := utils.NewVersionChecker(VERSION.String(), PACKAGE_NAME)
 	checker.CheckAsync()
@@ -68,15 +70,27 @@ func run(forceMigrate bool) {
 		cfg.AutoMigrate = true
 	}
 
+	// Override config with command line flags if provided
+	if bind != "" || port != 0 {
+		if bind == "" {
+			bind = "127.0.0.1"
+		}
+		if port == 0 {
+			port = 3007
+		}
+		cfg.ServeAt = fmt.Sprintf("%s:%d", bind, port)
+		cfg.Domain = cfg.ServeAt
+	}
+
 	logger, cleanup, err := utils.InitLogger(cfg)
 	if err != nil {
-		fmt.Printf("初始化日志失败: %v\n", err)
+		fmt.Printf("Failed to initialize logger: %v\n", err)
 		os.Exit(1)
 	}
 	defer cleanup()
 
 	if err := model.InitWithDSN(cfg.DSN, cfg.DBLogLevel, cfg.AutoMigrate); err != nil {
-		logger.Fatal("初始化数据层失败", zap.Error(err))
+		logger.Fatal("Failed to initialize database", zap.Error(err))
 	}
 	defer model.DBClose()
 
@@ -87,7 +101,7 @@ func run(forceMigrate bool) {
 			go func(target string) {
 				time.Sleep(800 * time.Millisecond)
 				if err := utils.OpenBrowser(target); err != nil {
-					logger.Warn("自动打开浏览器失败", zap.String("url", target), zap.Error(err))
+					logger.Warn("Failed to open browser automatically", zap.String("url", target), zap.Error(err))
 				}
 			}(url)
 		}
