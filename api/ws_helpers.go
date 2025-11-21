@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"code-kanban/api/terminal"
+	"code-kanban/service/terminal"
 	"code-kanban/utils"
 )
 

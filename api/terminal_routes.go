@@ -19,12 +19,12 @@ import (
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 	"go.uber.org/zap"
 
-	"code-kanban/api/ai_assistant"
 	"code-kanban/api/h"
-	"code-kanban/api/terminal"
 	"code-kanban/model"
 	"code-kanban/service"
+	"code-kanban/service/terminal"
 	"code-kanban/utils"
+	"code-kanban/utils/ai_assistant"
 )
 
 const (

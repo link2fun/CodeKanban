@@ -17,8 +17,8 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 
-	"code-kanban/api/ai_assistant"
 	"code-kanban/utils"
+	"code-kanban/utils/ai_assistant"
 	"code-kanban/utils/process"
 )
 

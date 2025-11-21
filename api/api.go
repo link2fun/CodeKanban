@@ -18,7 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"code-kanban/api/h"
-	"code-kanban/api/terminal"
+	"code-kanban/service/terminal"
 	"code-kanban/utils"
 )
 
