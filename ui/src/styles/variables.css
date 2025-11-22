@@ -1,0 +1,96 @@
+/**
+ * 全局 CSS 变量声明
+ * 这个文件定义了项目中使用的所有自定义 CSS 变量
+ * 这些变量会被 Vue 的 useCssVars 在运行时动态更新
+ */
+
+:root {
+  /* ==================== 主题颜色变量 ==================== */
+
+  /* 主要颜色 */
+  --app-body-color: #f7f8fa;
+  --app-surface-color: #ffffff;
+  --app-text-color: #333333;
+
+  /* 终端颜色 */
+  --kanban-terminal-bg: #0f111a;
+  --kanban-terminal-fg: #f6f8ff;
+
+  /* 终端状态指示器颜色 */
+  --kanban-terminal-status-ready: #12b76a;
+  --kanban-terminal-status-connecting: #f79009;
+  --kanban-terminal-status-error: #f04438;
+
+  /* 终端覆盖层颜色 */
+  --terminal-overlay-bg: rgba(0, 0, 0, 0.35);
+  --terminal-overlay-color: #f6f8ff;
+
+  /* 输入框边框颜色 */
+  --app-input-border-color: #d0d5dd;
+  --app-input-border-hover-color: #b8bcc8;
+
+  /* 预览面板颜色 */
+  --preview-banner-bg: #3b69a9;
+  --preview-banner-text: #ffffff;
+  --preview-panel-bg: #ffffff;
+  --preview-content-bg: #ffffff;
+  --preview-content-text: #333333;
+
+  /* ==================== Naive UI 变量 ==================== */
+  /* 这些变量由 Naive UI 的 n-config-provider 和 n-global-style 注入 */
+  /* 在这里声明是为了让 IDE 识别，避免警告 */
+
+  /* 主色调 */
+  --n-primary-color: #3b69a9;
+  --n-primary-color-hover: #4a7ab8;
+  --n-primary-color-pressed: #2f5689;
+  --n-primary-color-suppl: #4a7ab8;
+
+  /* 文本颜色 */
+  --n-text-color-base: #333333;
+  --n-text-color-1: #333333;
+  --n-text-color-2: #666666;
+  --n-text-color-3: #999999;
+
+  /* 背景颜色 */
+  --n-body-color: #f7f8fa;
+  --n-color: #ffffff;
+  --n-color-hover: #f5f5f5;
+  --n-card-color: #ffffff;
+  --n-modal-color: #ffffff;
+  --n-popover-color: #ffffff;
+
+  /* 边框颜色 */
+  --n-border-color: #e0e0e0;
+
+  /* 阴影颜色 */
+  --n-box-shadow-color: rgba(0, 0, 0, 0.12);
+
+  /* Tab 颜色 */
+  --n-tab-color: #ffffff;
+
+  /* 功能色 */
+  --n-error-color: #f5222d;
+  --n-warning-color: #fa8c16;
+  --n-success-color: #52c41a;
+  --n-info-color: #3b69a9;
+}
+
+/* ==================== 暗色主题变量参考 ==================== */
+/*
+  暗色主题变量会由以下方式动态注入:
+  1. App.vue 中的 useCssVars 更新自定义变量 (--app-*, --kanban-*)
+  2. n-config-provider 的 theme 属性设为 darkTheme
+  3. n-global-style 组件同步 Naive UI 的暗色主题变量到 body
+
+  暗色主题下的参考值:
+  --app-body-color: #1e1e1e
+  --app-surface-color: #252526
+  --app-text-color: #d4d4d4
+  --kanban-terminal-bg: #0f111a
+  --kanban-terminal-fg: #f6f8ff
+  --app-input-border-color: #4b4b4b
+  --app-input-border-hover-color: #5a5a5a
+
+  Naive UI 暗色主题变量由 darkTheme 自动提供
+*/

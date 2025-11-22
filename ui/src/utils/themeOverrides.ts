@@ -31,24 +31,36 @@ export function createThemeOverrides(
 
   return {
     common: {
+      // 基础颜色
       bodyColor,
       cardColor: surfaceColor,
       modalColor: surfaceColor,
       popoverColor: surfaceColor,
+      tableColor: surfaceColor,
+
       // 主色调配置
       primaryColor,
       primaryColorHover: primaryHover,
       primaryColorPressed: primaryPressed,
       primaryColorSuppl: primaryHover,
+
       // 文本颜色配置
       textColorBase: primaryTextColor,
       textColor1: primaryTextColor,
       textColor2: secondaryTextColor,
       textColor3: mutedTextColor,
+
+      // 边框颜色
+      borderColor: isDark ? '#3C3C3C' : '#E0E0E0',
+
       // Tab 配置
       tabColor: isDark ? '#262626' : '#FFFFFF',
-      tabColorSegment: isDark ? '#1F1F1F' : '#FFFFFF',
-      tabBorderColor: isDark ? '#3C3C3C' : '#E0E0E0',
+
+      // 功能色配置
+      errorColor: '#F5222D',
+      warningColor: '#FA8C16',
+      successColor: '#52C41A',
+      infoColor: primaryColor,
     },
     Layout: {
       color: surfaceColor,
@@ -91,7 +103,6 @@ export function createThemeOverrides(
           optionTextColor: primaryTextColor,
           optionTextColorActive: primaryColor,
           optionColorActive: isDark ? '#2A2A2A' : '#F5F5F5',
-          optionColorHover: isDark ? '#2A2A2A' : '#F5F5F5',
         },
       },
     },
@@ -117,6 +128,31 @@ export function createThemeOverrides(
     Scrollbar: {
       width: '8px',
       height: '8px',
+      color: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)',
+      colorHover: isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.25)',
+    },
+    Card: {
+      color: surfaceColor,
+      textColor: primaryTextColor,
+      titleTextColor: primaryTextColor,
+      borderColor: isDark ? '#3C3C3C' : '#E0E0E0',
+    },
+    Divider: {
+      color: isDark ? '#3C3C3C' : '#E0E0E0',
+    },
+    Popover: {
+      color: surfaceColor,
+      textColor: primaryTextColor,
+    },
+    Modal: {
+      color: surfaceColor,
+      textColor: primaryTextColor,
+      titleTextColor: primaryTextColor,
+    },
+    Drawer: {
+      color: surfaceColor,
+      textColor: primaryTextColor,
+      titleTextColor: primaryTextColor,
     },
   };
 }

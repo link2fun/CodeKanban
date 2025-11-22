@@ -2,7 +2,7 @@
 import { computed, useCssVars, watch, onMounted, onBeforeUnmount } from 'vue';
 import { RouterView } from 'vue-router';
 import { storeToRefs } from 'pinia';
-import { zhCN, dateZhCN, enUS, dateEnUS, type GlobalThemeOverrides } from 'naive-ui';
+import { zhCN, dateZhCN, enUS, dateEnUS, darkTheme, type GlobalThemeOverrides } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import AppInitializer from '@/components/common/AppInitializer.vue';
 import NotePad from '@/components/notepad/NotePad.vue';
@@ -34,6 +34,9 @@ const inputBorderHoverColor = computed(() =>
 // 根据当前语言动态切换 Naive UI 的 locale
 const naiveLocale = computed(() => (locale.value === 'zh-CN' ? zhCN : enUS));
 const naiveDateLocale = computed(() => (locale.value === 'zh-CN' ? dateZhCN : dateEnUS));
+
+// 根据主题配置动态切换 Naive UI 的 theme (亮色/暗色)
+const naiveTheme = computed(() => (isDarkTheme.value ? darkTheme : null));
 
 // 使用提取的主题配置函数，简化 App.vue 代码
 const themeOverrides = computed<GlobalThemeOverrides>(() => {
@@ -96,7 +99,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <n-config-provider :locale="naiveLocale" :date-locale="naiveDateLocale" :theme-overrides="themeOverrides">
+  <n-config-provider
+    :locale="naiveLocale"
+    :date-locale="naiveDateLocale"
+    :theme="naiveTheme"
+    :theme-overrides="themeOverrides"
+  >
+    <n-global-style />
     <n-loading-bar-provider>
       <n-dialog-provider>
         <n-notification-provider>
