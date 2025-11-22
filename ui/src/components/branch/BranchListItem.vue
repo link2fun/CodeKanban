@@ -97,10 +97,10 @@ function handleSelect(key: string | number) {
 
 <style scoped>
 .branch-card {
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--n-border-color);
   border-radius: 8px;
   padding: 12px;
-  background-color: var(--color-background);
+  background-color: var(--app-surface-color);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -115,7 +115,7 @@ function handleSelect(key: string | number) {
 
 .branch-card__meta {
   font-size: 12px;
-  color: var(--vt-c-text-light-2);
+  color: var(--n-text-color-2);
 }
 
 .branch-name {
